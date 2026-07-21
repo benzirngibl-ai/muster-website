@@ -1,0 +1,109 @@
+---
+// Schlankes Layout für Unterseiten (Impressum, Datenschutz, Danke, 404).
+import Base from './Base.astro';
+
+interface Props {
+  title: string;
+  heading?: string;
+}
+const { title, heading } = Astro.props;
+---
+
+<Base title={title}>
+  <header class="sub-header">
+    <div class="container sub-header-inner">
+      <a href="/" class="sub-brand">
+        <svg viewBox="0 0 32 32" width="28" height="28" fill="none" aria-hidden="true">
+          <path d="M8 15.5V26h16V15.5" stroke="#1C1917" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+          <path d="M3 17.5 16 6l13 11.5" stroke="#C2410C" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span><strong>Brandner &amp; Sohn</strong> · Dachdeckerei</span>
+      </a>
+      <a href="/" class="sub-back">← Zur Startseite</a>
+    </div>
+  </header>
+  <main id="main" class="container sub-main">
+    {heading && <h1>{heading}</h1>}
+    <slot />
+  </main>
+  <footer class="sub-footer">
+    <div class="container">
+      <p>
+        © 2026 Dachdeckerei Brandner &amp; Sohn — Musterbetrieb ·
+        <a href="/impressum/">Impressum</a> · <a href="/datenschutz/">Datenschutz</a>
+      </p>
+      <p class="sub-demo">
+        Muster-Website zur Demonstration, erstellt &amp; betreut von
+        <a href="https://k-aizen.de" rel="noopener">k-AIzen, Nürnberg</a> — der dargestellte Betrieb ist fiktiv.
+      </p>
+    </div>
+  </footer>
+</Base>
+
+<style>
+  .sub-header {
+    border-bottom: 1px solid var(--c-border);
+    background: #fff;
+  }
+  .sub-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.8rem;
+  }
+  .sub-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+    color: var(--c-ink);
+    font-size: 0.98rem;
+    min-height: 44px;
+  }
+  .sub-brand strong {
+    font-family: var(--font-head);
+  }
+  .sub-back {
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .sub-main {
+    padding-block: clamp(2.5rem, 6vw, 4rem);
+    max-width: 780px;
+  }
+  .sub-main h1 {
+    font-size: clamp(1.9rem, 4vw, 2.5rem);
+    margin-bottom: 1.5rem;
+  }
+  .sub-main :global(h2) {
+    font-size: 1.35rem;
+    margin-block: 1.75rem 0.6rem;
+  }
+  .sub-main :global(p + p) {
+    margin-top: 0.8rem;
+  }
+  .sub-main :global(ul) {
+    padding-left: 1.2rem;
+  }
+  .sub-footer {
+    border-top: 1px solid var(--c-border);
+    padding-block: 1.5rem;
+    font-size: 0.88rem;
+    color: var(--c-soft);
+    background: #fff;
+  }
+  .sub-footer a {
+    color: var(--c-body);
+  }
+  .sub-demo {
+    margin-top: 0.4rem;
+  }
+  .sub-demo a {
+    color: var(--c-primary);
+  }
+</style>

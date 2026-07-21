@@ -1,0 +1,239 @@
+---
+// Basis-Layout: Fonts selbst gehostet (DSGVO), noindex (fiktiver Musterbetrieb),
+// Design-System „Trust & Authority" (ui-ux-pro-max): Terracotta + warmes Stein-Grau,
+// Lexend (Headings) + Source Sans 3 (Body).
+import '@fontsource/lexend/400.css';
+import '@fontsource/lexend/500.css';
+import '@fontsource/lexend/600.css';
+import '@fontsource/lexend/700.css';
+import '@fontsource/source-sans-3/400.css';
+import '@fontsource/source-sans-3/600.css';
+import '@fontsource/source-sans-3/700.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+const {
+  title,
+  description = 'Dachdeckerei Brandner & Sohn — Meisterbetrieb in Nürnberg. Reparatur, Neueindeckung, Flachdach, Dachfenster. Festpreis-Angebot in 24 Stunden.',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <!-- Muster-Website: fiktiver Betrieb, gehört nicht in Suchergebnisse -->
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="color-scheme" content="light" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Zum Inhalt springen</a>
+    <slot />
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    /* Farben — Terracotta (Dachziegel) + warmes Stein-Grau */
+    --c-primary: #c2410c;
+    --c-primary-dark: #9a3412;
+    --c-primary-soft: #fff7ed;
+    --c-primary-soft-2: #ffedd5;
+    --c-ink: #1c1917;
+    --c-body: #44403c;
+    --c-soft: #78716c;
+    --c-bg: #fafaf9;
+    --c-surface: #ffffff;
+    --c-border: #e7e5e4;
+    --c-ok: #15803d;
+    --c-error: #b91c1c;
+
+    --font-head: 'Lexend', system-ui, sans-serif;
+    --font-body: 'Source Sans 3', system-ui, sans-serif;
+
+    --radius: 12px;
+    --radius-lg: 20px;
+    --shadow-sm: 0 1px 3px rgba(28, 25, 23, 0.07), 0 1px 2px rgba(28, 25, 23, 0.05);
+    --shadow-md: 0 8px 24px rgba(28, 25, 23, 0.09), 0 2px 6px rgba(28, 25, 23, 0.05);
+    --shadow-lg: 0 18px 44px rgba(28, 25, 23, 0.13);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    font-family: var(--font-body);
+    font-size: 1.0625rem; /* 17px — Zielgruppe 35–70, großzügig lesbar */
+    line-height: 1.65;
+    color: var(--c-body);
+    background: var(--c-bg);
+  }
+  @media (min-width: 768px) {
+    body {
+      font-size: 1.125rem;
+    }
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-head);
+    color: var(--c-ink);
+    line-height: 1.18;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+
+  p {
+    max-width: 62ch;
+  }
+
+  a {
+    color: var(--c-primary);
+  }
+
+  img,
+  svg {
+    max-width: 100%;
+    display: block;
+  }
+
+  .container {
+    max-width: 1120px;
+    margin-inline: auto;
+    padding-inline: clamp(1.125rem, 4vw, 2rem);
+  }
+
+  .section {
+    padding-block: clamp(3.5rem, 8vw, 6rem);
+  }
+
+  /* Buttons — Touch-Targets ≥48px, klare States */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-height: 50px;
+    padding: 0.8rem 1.6rem;
+    border-radius: 10px;
+    border: 2px solid transparent;
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color 180ms ease,
+      border-color 180ms ease,
+      color 180ms ease,
+      transform 120ms ease,
+      box-shadow 180ms ease;
+    touch-action: manipulation;
+  }
+  .btn:active {
+    transform: scale(0.98);
+  }
+  .btn-primary {
+    background: var(--c-primary);
+    color: #fff;
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-primary:hover {
+    background: var(--c-primary-dark);
+    box-shadow: var(--shadow-md);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--c-ink);
+    border-color: var(--c-border);
+  }
+  .btn-ghost:hover {
+    border-color: var(--c-primary);
+    color: var(--c-primary);
+  }
+  .btn-light {
+    background: #fff;
+    color: var(--c-ink);
+  }
+  .btn-light:hover {
+    background: var(--c-primary-soft);
+  }
+
+  :focus-visible {
+    outline: 3px solid rgba(194, 65, 12, 0.5);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: -999px;
+    top: 0;
+    background: var(--c-ink);
+    color: #fff;
+    padding: 0.6rem 1rem;
+    z-index: 1000;
+    border-radius: 0 0 8px 0;
+  }
+  .skip-link:focus {
+    left: 0;
+  }
+
+  /* Kicker-Label über Section-Headlines */
+  .kicker {
+    display: inline-block;
+    font-family: var(--font-head);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--c-primary);
+    margin-bottom: 0.75rem;
+  }
+
+  .section-head {
+    max-width: 640px;
+    margin-bottom: clamp(2rem, 5vw, 3rem);
+  }
+  .section-head h2 {
+    font-size: clamp(1.75rem, 4vw, 2.375rem);
+    margin-bottom: 0.75rem;
+  }
+  .section-head p {
+    color: var(--c-soft);
+    font-size: 1.0625rem;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+</style>

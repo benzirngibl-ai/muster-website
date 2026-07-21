@@ -1,0 +1,51 @@
+---
+import Sub from '../layouts/Sub.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<Sub title="Anfrage erhalten — Dachdeckerei Brandner & Sohn">
+  <div class="ok-card">
+    <span class="ok-icon"><Icon name="check" size={34} /></span>
+    <h1>Ihre Anfrage ist angekommen.</h1>
+    <p class="ok-lead">
+      Sie liegt in diesem Moment auf dem Handy von Michael Brandner —
+      <strong>wir rufen Sie zurück, meist innerhalb von 2 Stunden</strong> (werktags).
+    </p>
+    <p class="ok-sub">
+      Eilig? Rufen Sie direkt an: <a href="tel:+49911000000">0911&nbsp;00&nbsp;00&nbsp;000</a>
+      — Notdienst täglich bis 22&nbsp;Uhr.
+    </p>
+    <a href="/" class="btn btn-primary">Zurück zur Startseite</a>
+  </div>
+</Sub>
+
+<style>
+  .ok-card {
+    text-align: center;
+    padding-block: 2rem;
+  }
+  .ok-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 76px;
+    height: 76px;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: var(--c-ok);
+    margin-bottom: 1.5rem;
+  }
+  .ok-card h1 {
+    margin-bottom: 1rem;
+  }
+  .ok-lead {
+    font-size: 1.15rem;
+    margin-inline: auto;
+    margin-bottom: 0.8rem;
+  }
+  .ok-sub {
+    color: var(--c-soft);
+    margin-inline: auto;
+    margin-bottom: 2rem;
+  }
+</style>

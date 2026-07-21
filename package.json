@@ -1,0 +1,18 @@
+{
+  "name": "muster-website",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Muster-Website Handwerk (Einstiegsprodukt-Demo): fiktive Dachdeckerei Brandner & Sohn, Nürnberg. Demo-Asset fürs VSL — Formular → Handy-Sofort-Benachrichtigung.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^5.13.0",
+    "@fontsource/lexend": "^5.2.5",
+    "@fontsource/source-sans-3": "^5.2.5"
+  }
+}
