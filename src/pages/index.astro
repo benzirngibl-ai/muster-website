@@ -6,7 +6,8 @@ import Icon from '../components/Icon.astro';
 // Lokal testbar via PUBLIC_LEAD_API=http://localhost:8080 npm run build.
 const LEAD_API = import.meta.env.PUBLIC_LEAD_API ?? 'https://muster-api.k-aizen.de';
 // Cal.com self-hosted auf deutschem Server — Terminanfrage-Demo.
-const CAL_URL = 'https://cal.k-aizen.de/ben-Kaizen/erstgespraech';
+// Event „Rückruf-Termin" (15 Min) am 21.07. direkt in der Cal-DB angelegt (Row-Copy von 30min).
+const CAL_URL = 'https://cal.k-aizen.de/ben-kaizen/rueckruf';
 
 const TEL_DISPLAY = '0911 00 00 000';
 const TEL_HREF = 'tel:+49911000000';
