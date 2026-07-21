@@ -1,3 +1,0 @@
-# Muster-Website (fiktiver Betrieb) — bewusst nicht für Suchmaschinen bestimmt.
-User-agent: *
-Disallow: /

@@ -1,0 +1,85 @@
+---
+/**
+ * SchemaLocal — der Rank&Rent-USP, portiert auf Kunden-Sites (Meisterseite).
+ * EIN JSON-LD @graph mit stabilen @id-Ankern:
+ *   LocalBusiness-Subtyp (aus config) → wer, wo, wann, Bewertungen
+ *   WebSite / WebPage → Struktur für Google + KI-Suche
+ *   Service je Leistung → zitierfähige Leistungsliste
+ *
+ * Unterschied zu asbest-entfernen.de: der Kunde IST ein echter lokaler
+ * Betrieb → volles LocalBusiness MIT PostalAddress ist hier korrekt
+ * (dort als Vermittler bewusst verboten).
+ */
+import { BUSINESS as B } from '../config';
+
+interface Props {
+  pageName: string;
+  description: string;
+  pageUrl: string; // absolut, kanonisch
+}
+const { pageName, description, pageUrl } = Astro.props;
+
+const id = {
+  business: `${B.domain}/#business`,
+  website: `${B.domain}/#website`,
+  page: `${pageUrl}#webpage`,
+};
+
+const graph: Record<string, unknown>[] = [
+  {
+    '@type': B.schemaType,
+    '@id': id.business,
+    name: B.name,
+    description: B.beschreibung,
+    url: `${B.domain}/`,
+    telephone: B.telefonHref.replace('tel:', ''),
+    email: B.email,
+    foundingDate: B.gruendung,
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: B.strasse,
+      postalCode: B.plz,
+      addressLocality: B.ort,
+      addressCountry: 'DE',
+    },
+    areaServed: B.einsatzgebiet.map((ort) => ({ '@type': 'City', name: ort })),
+    openingHours: B.openingHours,
+    makesOffer: B.leistungen.map((l) => ({
+      '@type': 'Offer',
+      itemOffered: { '@type': 'Service', name: l, areaServed: B.einsatzgebiet.join(', ') },
+    })),
+    ...(B.rating
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: B.rating.value,
+            reviewCount: B.rating.count,
+            bestRating: '5',
+          },
+        }
+      : {}),
+  },
+  {
+    '@type': 'WebSite',
+    '@id': id.website,
+    url: `${B.domain}/`,
+    name: B.name,
+    publisher: { '@id': id.business },
+    inLanguage: 'de-DE',
+  },
+  {
+    '@type': 'WebPage',
+    '@id': id.page,
+    url: pageUrl,
+    name: pageName,
+    description,
+    isPartOf: { '@id': id.website },
+    about: { '@id': id.business },
+    inLanguage: 'de-DE',
+  },
+];
+
+const jsonLd = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+---
+
+<script type="application/ld+json" set:html={jsonLd} is:inline />

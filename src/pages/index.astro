@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Icon from '../components/Icon.astro';
+import { BUSINESS } from '../config';
 
 // Lead-API (eigener kleiner Dienst, gleiches Muster wie asbest-entfernen.de).
 // Lokal testbar via PUBLIC_LEAD_API=http://localhost:8080 npm run build.
@@ -9,8 +10,8 @@ const LEAD_API = import.meta.env.PUBLIC_LEAD_API ?? 'https://muster-api.k-aizen.
 // Event „Rückruf-Termin" (15 Min) am 21.07. direkt in der Cal-DB angelegt (Row-Copy von 30min).
 const CAL_URL = 'https://cal.k-aizen.de/ben-kaizen/rueckruf';
 
-const TEL_DISPLAY = '0911 00 00 000';
-const TEL_HREF = 'tel:+49911000000';
+const TEL_DISPLAY = BUSINESS.telefonDisplay;
+const TEL_HREF = BUSINESS.telefonHref;
 
 const leistungen = [
   {

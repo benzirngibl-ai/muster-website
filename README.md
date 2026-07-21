@@ -4,6 +4,10 @@ Demonstrations-Website für einen Handwerksbetrieb: statische Astro-Site mit
 Anfrage-Formular, Sofort-Benachrichtigung und Online-Terminanfrage.
 Der dargestellte Betrieb ist fiktiv (siehe Footer/Impressum der Seite).
 
+**Zugleich das Kunden-Template fürs Einstiegsprodukt „Meisterseite":** der komplette
+SEO/GEO-Stack der Rank-&-Rent-Sites (asbest-entfernen.de) ist ab Werk eingebaut und
+hängt an einem Schalter (`src/config.ts` → `indexable`).
+
 - **Live:** https://muster.k-aizen.de (noindex — bewusst nicht für Suchmaschinen)
 - **Lead-API:** https://muster-api.k-aizen.de (`lead-api/`, eigener Container)
 
@@ -13,6 +17,31 @@ Der dargestellte Betrieb ist fiktiv (siehe Footer/Impressum der Seite).
 - Fonts selbst gehostet (@fontsource: Lexend + Source Sans 3), kein CDN, kein Tracking
 - `lead-api/server.mjs`: dependency-freier Node-Dienst — Formular-POST →
   JSONL-Log (`/data/leads.jsonl`) + Discord-Webhook-Ping (mit @Mention) + Resend-Mail
+
+## SEO/GEO-Stack (ab Werk, gesteuert über `src/config.ts`)
+
+- **Schema.org-@graph** auf jeder Seite (`SchemaLocal.astro`): LocalBusiness-Subtyp
+  (pro Gewerk wählbar, z. B. `RoofingContractor`) mit Adresse, areaServed,
+  Öffnungszeiten, Leistungen als Offer/Service + WebSite/WebPage, @id-verknüpft
+- **Canonical + og:url** auf jeder Seite, `robots`-Meta aus dem `indexable`-Schalter
+- **robots.txt** (dynamisch): Demo = Disallow all · Kunde = Allow + KI-Bots
+  (GPTBot, ClaudeBot, PerplexityBot, …) ausdrücklich erlaubt + Sitemap-Referenz
+- **llms.txt** (dynamisch aus config): zitierfähige Betriebs-Fakten für KI-Suche
+- **Sitemap** (@astrojs/sitemap) — wird immer gebaut
+- **IndexNow** (`tools/indexnow.mjs`): nach Deploy ausführen → Bing/ChatGPT-Kanal
+  (Google läuft über Sitemap + GSC, siehe `rank-rent/BLUEPRINT-ben-klicks-neue-nische.md`)
+
+## Kunden-Rollout (Checkliste)
+
+1. Repo kopieren → `src/config.ts` komplett mit echten Betriebsdaten füllen,
+   **`indexable: true`** setzen (⚠️ `rating` nur bei echten, on-page belegten Bewertungen)
+2. `astro.config.mjs`: `SITE` auf die Kundendomain
+3. Texte/Sektionen in `src/pages/index.astro` + Unterseiten aufs Gewerk anpassen
+   (Impressum/Datenschutz: Demo-Hinweis raus, echte Betriebsdaten rein!)
+4. `tools/indexnow.mjs`: HOST tauschen, neuen KEY erzeugen (`openssl rand -hex 16`),
+   Key-Datei `public/<KEY>.txt` anlegen, alte löschen
+5. `lead-api`: Discord-Webhook des Kunden-Servers (oder SMS) + LEAD_TO des Kunden
+6. Deploy (Coolify, 2 Apps) → `node tools/indexnow.mjs` → GSC + Sitemap (Ben-Klicks)
 
 ## Lokal
 
