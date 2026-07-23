@@ -23,6 +23,23 @@ const {
 
 // Kanonische URL (SEO-Basis, auch @id-Anker fürs Schema).
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
+
+// KI-Chat-Widget-Konfig, gespeist aus BUSINESS. Backend-URL kommt aus der
+// Umgebung (PUBLIC_CHAT_BOT_URL) — leer lassen = Widget lädt nicht (nie faken).
+const chatBotUrl = import.meta.env.PUBLIC_CHAT_BOT_URL || '';
+const ort0 = BUSINESS.einsatzgebiet?.[0] ?? BUSINESS.ort;
+const chatConfig = JSON.stringify({
+  botUrl: chatBotUrl,
+  name: BUSINESS.name,
+  assistant: 'Online-Assistent',
+  address: 'Sie',
+  greeting: `Hallo! Ich bin der Online-Assistent von ${BUSINESS.name}. Ich beantworte Ihnen Fragen zu Leistungen, Ablauf und Preisen — und nehme Ihre Anfrage gleich auf.`,
+  suggestions: [
+    (BUSINESS.leistungen?.[0] ? `Was kostet ${BUSINESS.leistungen[0].split(' ')[0].toLowerCase()} ungefähr?` : 'Was kostet das ungefähr?'),
+    `Kommt ihr nach ${ort0}?`,
+    'Wie schnell habt ihr Zeit?',
+  ],
+});
 ---
 
 <!doctype html>
@@ -47,6 +64,14 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
   <body>
     <a class="skip-link" href="#main">Zum Inhalt springen</a>
     <slot />
+
+    {/* KI-Chat-Widget — neutral, konfiguriert aus BUSINESS. Backend-URL via
+        PUBLIC_CHAT_BOT_URL env (leer = Widget lädt nicht → keine Attrappe).
+        Das echte Claude-RAG-Backend liegt in k-aizen/website/chatbot/. */}
+    {chatBotUrl && (
+      <script is:inline set:html={`window.MEISTER_CHAT = ${chatConfig};`} />
+      <script is:inline src="/widgets/chat-widget.js"></script>
+    )}
   </body>
 </html>
 
