@@ -1,0 +1,127 @@
+/* Anfragen-App — Gerüst-Stil: für einen Daumen auf einem Handy, bei Sonne, mit Arbeitshandschuh.
+   Große Antippflächen, hoher Kontrast, keine Verzierung. Feinschliff später. */
+
+:root {
+  --ink: #16181d;
+  --dim: #5c6470;
+  --zart: #8b93a0;
+  --linie: #e0e4ea;
+  --flaeche: #fff;
+  --grund: #f4f6f8;
+  --akzent: #c2410c;
+  --gut: #1a7f4b;
+  --warn: #b07800;
+  --warnbg: #fdf5e6;
+  --gutbg: #e9f5ee;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  margin: 0;
+  padding: 0 0 env(safe-area-inset-bottom);
+  background: var(--grund);
+  color: var(--ink);
+  font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ---------- Kopf ---------- */
+
+.kopf {
+  position: sticky; top: 0; z-index: 10;
+  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+  background: var(--flaeche);
+  border-bottom: 1px solid var(--linie);
+}
+.kopf-zeile { display: flex; align-items: center; gap: 12px; }
+.kopf h1 { margin: 0; font-size: 19px; letter-spacing: -.02em; flex: 1; }
+
+.rund {
+  width: 42px; height: 42px; flex: none;
+  border: 1px solid var(--linie); border-radius: 50%;
+  background: var(--flaeche); color: var(--dim);
+  font-size: 20px; line-height: 1; cursor: pointer;
+}
+.rund:active { background: var(--grund); }
+
+.hinweis {
+  margin-top: 10px; padding: 10px 13px;
+  border-radius: 8px; font-size: 14px;
+  background: var(--grund); color: var(--dim);
+}
+.hinweis--warn { background: var(--warnbg); color: var(--warn); }
+.hinweis--gut { background: var(--gutbg); color: var(--gut); }
+
+/* ---------- Karten ---------- */
+
+.karte {
+  margin: 12px 16px;
+  padding: 15px 16px;
+  background: var(--flaeche);
+  border: 1px solid var(--linie);
+  border-radius: 12px;
+}
+
+.einrichten { border-left: 4px solid var(--akzent); }
+.einrichten h2 { margin: 0 0 6px; font-size: 16px; }
+.einrichten p { margin: 0 0 13px; color: var(--dim); font-size: 14.5px; }
+.einrichten details { margin-top: 13px; font-size: 14.5px; }
+.einrichten summary { cursor: pointer; color: var(--akzent); font-weight: 600; padding: 4px 0; }
+.einrichten ol { margin: 10px 0 0; padding-left: 22px; color: var(--dim); }
+.einrichten li { margin-bottom: 7px; }
+
+/* ---------- Anfrage ---------- */
+
+.anfrage { border-left: 4px solid var(--akzent); }
+.anfrage.erledigt { border-left-color: var(--linie); opacity: .58; }
+
+.zeile1 { display: flex; align-items: baseline; gap: 10px; }
+.name { font-size: 17px; flex: 1; }
+.zeit { color: var(--zart); font-size: 13px; white-space: nowrap; }
+.ort { color: var(--dim); font-size: 14px; margin-top: 2px; }
+.text { margin: 10px 0 0; font-size: 15.5px; }
+.rueckruf {
+  margin-top: 9px; padding: 7px 11px;
+  background: var(--grund); border-radius: 7px;
+  font-size: 14px; color: var(--dim);
+}
+.tel { margin-top: 9px; color: var(--zart); font-size: 13.5px; }
+
+/* ---------- Knöpfe ---------- */
+
+.aktionen { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 14px; }
+
+.knopf {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 46px; padding: 0 18px;
+  border: 1px solid var(--linie); border-radius: 9px;
+  background: var(--flaeche); color: var(--ink);
+  font: inherit; font-size: 15px; font-weight: 600;
+  text-decoration: none; cursor: pointer;
+}
+.knopf:active { transform: scale(.97); }
+.knopf--stark { background: var(--akzent); border-color: var(--akzent); color: #fff; }
+.knopf--leise { color: var(--dim); font-weight: 500; margin-left: auto; }
+
+.einrichten .knopf { width: 100%; background: var(--akzent); border-color: var(--akzent); color: #fff; }
+.einrichten .knopf:disabled { opacity: .6; }
+
+/* ---------- Leerzustand ---------- */
+
+.leer { padding: 44px 32px; text-align: center; color: var(--dim); }
+.leer p { margin: 0 0 8px; }
+.leer .klein { font-size: 14px; color: var(--zart); }
+
+/* ---------- Dunkel ---------- */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8ebf1; --dim: #9aa3b2; --zart: #79828f; --linie: #2d333d;
+    --flaeche: #1a1d23; --grund: #101318; --akzent: #f0703a;
+    --gut: #4ec27f; --warn: #e0a83c; --warnbg: #2a2213; --gutbg: #122c1e;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .knopf:active { transform: none; }
+}

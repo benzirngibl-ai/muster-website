@@ -1,0 +1,44 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16181d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Anfragen">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="stylesheet" href="./app.css">
+<title>Anfragen</title>
+
+<header class="kopf">
+  <div class="kopf-zeile">
+    <h1 id="betrieb">Anfragen</h1>
+    <button id="aktualisieren" class="rund" title="Aktualisieren" aria-label="Aktualisieren">↻</button>
+  </div>
+  <div id="hinweis" class="hinweis" hidden></div>
+</header>
+
+<!-- Einrichtung: erscheint, solange Benachrichtigungen nicht aktiv sind -->
+<section id="einrichten" class="karte einrichten" hidden>
+  <h2>Benachrichtigungen einschalten</h2>
+  <p id="einrichten-text">Damit neue Anfragen sofort auf Ihrem Handy ankommen.</p>
+  <button id="erlauben" class="knopf">Benachrichtigungen erlauben</button>
+  <details id="ios-hilfe" hidden>
+    <summary>Auf dem iPhone zuerst zum Startbildschirm hinzufügen</summary>
+    <ol>
+      <li>Diese Seite in <strong>Safari</strong> öffnen (nicht in Chrome).</li>
+      <li>Unten auf das <strong>Teilen-Symbol</strong> tippen — das Quadrat mit dem Pfeil nach oben.</li>
+      <li><strong>„Zum Home-Bildschirm"</strong> wählen und bestätigen.</li>
+      <li>Den neuen <strong>Anfragen</strong>-Knopf auf dem Startbildschirm antippen.</li>
+      <li>Dort erscheint dieser Hinweis erneut — dann auf „Erlauben" tippen.</li>
+    </ol>
+  </details>
+</section>
+
+<main id="liste" class="liste"></main>
+
+<div id="leer" class="leer" hidden>
+  <p>Noch keine Anfragen.</p>
+  <p class="klein">Sobald sich jemand über Ihre Website meldet, erscheint die Anfrage hier — und Ihr Handy meldet sich.</p>
+</div>
+
+<script src="./app.js"></script>

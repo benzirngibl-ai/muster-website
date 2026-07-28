@@ -9,7 +9,17 @@
 // Persistenz: /data/leads.jsonl (Coolify-Volume).
 
 import http from 'node:http';
-import { appendFileSync, mkdirSync } from 'node:fs';
+import { appendFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { join, extname, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { pushSenden } from './push.mjs';
+import {
+  kundeAusToken, aboSpeichern, abosVonKunde, aboEntfernen,
+  leadSpeichern, leadsVonKunde, leadStatusSetzen, kundenAlle,
+} from './kunden.mjs';
+
+const HIER = dirname(fileURLToPath(import.meta.url));
+const APP_DIR = join(HIER, 'app');
 
 const PORT = Number(process.env.PORT || 8080);
 const LEAD_TO = process.env.LEAD_TO || 'ben.zirngibl@gmail.com';
@@ -105,12 +115,116 @@ async function sendMail(lead) {
   }
 }
 
+// ── Anfragen-App: Push aufs Kundenhandy ──────────────────────────────────────
+// Der Push transportiert bewusst KEINE Inhalte — nur das Signal. Details holt
+// die App danach über einen authentifizierten Aufruf. Damit sehen Apple und
+// Google nie, worum es in der Anfrage geht.
+
+async function pingApp(kunde, leadId) {
+  const abos = abosVonKunde(kunde);
+  if (!abos.length) return { ok: false, geraete: 0, grund: 'kein Gerät angemeldet' };
+
+  const nutzlast = JSON.stringify({
+    titel: 'Neue Anfrage',
+    text: 'Jemand hat sich über Ihre Website gemeldet.',
+    id: leadId,
+  });
+
+  let zugestellt = 0;
+  for (const abo of abos) {
+    const r = await pushSenden({ endpoint: abo.endpoint, keys: abo.keys }, nutzlast);
+    if (r.ok) zugestellt++;
+    else if (r.weg) { aboEntfernen(abo.endpoint); console.log(`ABO ENTFERNT ${abo.endpoint.slice(0, 60)}…`); }
+    else console.error('PUSH-FEHLER', r.status, r.fehler || '');
+  }
+  return { ok: zugestellt > 0, geraete: abos.length, zugestellt };
+}
+
+const TYPEN = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png' };
+
+function appDateiAusliefern(pfad, res) {
+  // Verzeichniswechsel unterbinden — nur Dateien unterhalb von app/
+  const datei = join(APP_DIR, pfad.replace(/^\/app\/?/, '') || 'index.html');
+  if (!datei.startsWith(APP_DIR) || !existsSync(datei)) return false;
+  const typ = TYPEN[extname(datei)] || 'application/octet-stream';
+  // Der Service Worker darf nie aus dem Zwischenspeicher kommen, sonst hängen Kunden auf alten Fassungen
+  const cache = datei.endsWith('sw.js') ? 'no-cache' : 'public, max-age=3600';
+  res.writeHead(200, { 'Content-Type': typ, 'Cache-Control': cache, 'Service-Worker-Allowed': '/app/' });
+  res.end(readFileSync(datei));
+  return true;
+}
+
+function zugang(req) {
+  return kundeAusToken(req.headers['x-zugang'] || '');
+}
+function jsonAntwort(res, code, wert) {
+  res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(wert));
+}
+function koerperLesen(req) {
+  return new Promise((auf) => {
+    let roh = '';
+    req.on('data', (c) => { roh += c; if (roh.length > 20_000) req.destroy(); });
+    req.on('end', () => { try { auf(JSON.parse(roh || '{}')); } catch { auf({}); } });
+  });
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   if (req.method === 'GET' && url.pathname === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({ ok: true, discord: !!DISCORD_WEBHOOK, resend: !!process.env.RESEND_API_KEY }));
+    return res.end(JSON.stringify({
+      ok: true,
+      discord: !!DISCORD_WEBHOOK,
+      resend: !!process.env.RESEND_API_KEY,
+      push: !!process.env.VAPID_PUBLIC_KEY,
+      kunden: Object.keys(kundenAlle()).length,
+    }));
+  }
+
+  // ── App-Dateien ──
+  if (req.method === 'GET' && (url.pathname === '/app' || url.pathname.startsWith('/app/'))) {
+    if (url.pathname === '/app') { res.writeHead(302, { Location: '/app/' }); return res.end(); }
+    if (appDateiAusliefern(url.pathname, res)) return;
+    res.writeHead(404); return res.end('nicht gefunden');
+  }
+
+  // ── App-Schnittstelle ──
+  if (url.pathname.startsWith('/api/')) {
+    if (url.pathname === '/api/vapid' && req.method === 'GET') {
+      return jsonAntwort(res, 200, { publicKey: process.env.VAPID_PUBLIC_KEY || '' });
+    }
+
+    const kunde = zugang(req);
+    if (!kunde) return jsonAntwort(res, 401, { fehler: 'kein gültiger Zugang' });
+
+    if (url.pathname === '/api/anfragen' && req.method === 'GET') {
+      return jsonAntwort(res, 200, {
+        betrieb: kundenAlle()[kunde]?.name || '',
+        anfragen: leadsVonKunde(kunde),
+      });
+    }
+
+    if (url.pathname === '/api/abo' && req.method === 'POST') {
+      const b = await koerperLesen(req);
+      if (!b.abo?.endpoint || !b.abo?.keys?.p256dh || !b.abo?.keys?.auth) {
+        return jsonAntwort(res, 400, { fehler: 'Abo unvollständig' });
+      }
+      aboSpeichern(kunde, b.abo, b.geraet);
+      console.log(`ABO NEU kunde=${kunde} geräte=${abosVonKunde(kunde).length}`);
+      return jsonAntwort(res, 200, { ok: true });
+    }
+
+    const status = url.pathname.match(/^\/api\/anfragen\/([a-f0-9]{16})\/status$/);
+    if (status && req.method === 'POST') {
+      const b = await koerperLesen(req);
+      leadStatusSetzen(status[1], b.erledigt);
+      return jsonAntwort(res, 200, { ok: true });
+    }
+
+    return jsonAntwort(res, 404, { fehler: 'unbekannt' });
   }
 
   if (req.method === 'POST' && url.pathname === '/anfrage') {
@@ -121,11 +235,15 @@ const server = http.createServer(async (req, res) => {
       const p = new URLSearchParams(raw);
       const lead = {
         ts: new Date().toISOString(),
+        // `kunde` steuert, in welcher App die Anfrage landet. Fehlt es, ist es die Demo.
+        kunde: (p.get('kunde') || 'muster').slice(0, 40).replace(/[^a-z0-9_-]/gi, ''),
         name: (p.get('name') || '').slice(0, 120),
         telefon: (p.get('telefon') || '').slice(0, 40),
         ort: (p.get('ort') || '').slice(0, 80),
         nachricht: (p.get('nachricht') || '').slice(0, 1000),
         email: (p.get('email') || '').slice(0, 200),
+        // Terminwunsch statt Kalender — z.B. „Dienstag vormittag"
+        rueckruf: (p.get('rueckruf') || '').slice(0, 80),
         quelle: (p.get('quelle') || '').slice(0, 120),
         einwilligung: p.get('einwilligung') === 'on',
         ip,
@@ -143,18 +261,24 @@ const server = http.createServer(async (req, res) => {
         return res.end();
       }
 
-      // 1) Lead loggen (Quelle der Wahrheit)
-      try { appendFileSync(LOG, JSON.stringify(lead) + '\n'); } catch (e) { console.error('LOG-FEHLER', e); }
+      // 1) Lead speichern (Quelle der Wahrheit) — vergibt die ID
+      let gespeichert;
+      try { gespeichert = leadSpeichern(lead); }
+      catch (e) { console.error('SPEICHER-FEHLER', e); gespeichert = { ...lead, id: null }; }
 
-      // 2) ⭐ Discord-Ping aufs Handy (der Demo-Moment)
+      // 2) ⭐ Push in die Anfragen-App des Kunden — der eigentliche Zustellweg
+      const app = await pingApp(lead.kunde, gespeichert.id);
+
+      // 3) Discord-Ping (Demo-Moment im Verkauf; bei echten Kunden nur wenn eingerichtet)
       const ping = await pingDiscord(lead);
       if (!ping.ok) console.error('DISCORD-FEHLER', JSON.stringify(ping));
 
-      // 3) Mail als Backup (Fehler verliert keinen Lead)
+      // 4) Mail als Rückfallebene — greift auch, wenn der Kunde die App nie installiert
       const mail = await sendMail(lead);
       if (!mail.ok) console.error('MAIL-FEHLER', JSON.stringify(mail));
 
-      console.log(`LEAD ${lead.ts} ${lead.ort} ${lead.name} discord=${ping.ok} mail=${mail.ok}`);
+      console.log(`LEAD ${lead.ts} kunde=${lead.kunde} ${lead.ort} ${lead.name} ` +
+        `app=${app.zugestellt ?? 0}/${app.geraete} discord=${ping.ok} mail=${mail.ok}`);
 
       res.writeHead(303, { Location: `${SITE}/anfrage-erhalten/` });
       return res.end();
