@@ -38,6 +38,15 @@ hängt an einem Schalter (`src/config.ts` → `indexable`).
 2. `astro.config.mjs`: `SITE` auf die Kundendomain
 3. Texte/Sektionen in `src/pages/index.astro` + Unterseiten aufs Gewerk anpassen
    (Impressum/Datenschutz: Demo-Hinweis raus, echte Betriebsdaten rein!)
+3a. ⚠️ **BILDER: echte Fotos des Kundenbetriebs — Pflicht, keine Ausnahme.**
+   Die Demo nutzt generierte Bilder (`BILD-PROMPTS-GPT.md`), weil es den Betrieb nicht gibt.
+   Beim echten Kunden ist das genau falsch herum: Wer generierte Handwerker-Fotos auf die Seite
+   eines echten Betriebs stellt, verkauft eine Fassade — und der erste Kunde, der die Baustelle
+   sieht, merkt es. Vom Kunden anfordern: Hero (ein Motiv seiner Arbeit), 4 abgeschlossene
+   Projekte mit Ort/Jahr, ein Detailbild, optional Team. Handy-Fotos genügen völlig, wenn sie
+   scharf und bei Tageslicht aufgenommen sind. Bildplätze im Template:
+   `hero-*.jpg` · `projekt-1…4.jpg` · `detail-*.jpg` · `team.jpg` in `public/images/`.
+   Danach in WebP wandeln und `width`/`height` prüfen (Layout-Sprünge).
 4. `tools/indexnow.mjs`: HOST tauschen, neuen KEY erzeugen (`openssl rand -hex 16`),
    Key-Datei `public/<KEY>.txt` anlegen, alte löschen
 5. `lead-api`: Discord-Webhook des Kunden-Servers (oder SMS) + LEAD_TO des Kunden

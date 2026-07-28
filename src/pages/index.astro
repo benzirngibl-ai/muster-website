@@ -86,28 +86,28 @@ const stimmen = [
 // durch ECHTE Projektfotos des Betriebs ersetzen (siehe README, Schritt 3a).
 const referenzen = [
   {
-    bild: '/images/projekt-1.jpg',
+    bild: '/images/projekt-1.webp',
     titel: 'Neueindeckung Steildach',
     detail: 'Tondachziegel naturrot, komplett mit neuer Lattung und Unterspannbahn.',
     ort: 'Nürnberg-Erlenstegen, 2025',
     alt: 'Frisch eingedecktes Steildach mit naturroten Tonziegeln an einem Einfamilienhaus',
   },
   {
-    bild: '/images/projekt-2.jpg',
+    bild: '/images/projekt-2.webp',
     titel: 'Flachdach-Abdichtung',
     detail: 'Garagendach mit zweilagiger Bitumenbahn — geprüft dicht übergeben.',
     ort: 'Fürth-Dambach, 2024',
     alt: 'Frisch abgedichtetes Flachdach einer Garage mit dunkler Bitumenbahn',
   },
   {
-    bild: '/images/projekt-3.jpg',
+    bild: '/images/projekt-3.webp',
     titel: 'Dachfenster-Einbau',
     detail: 'Zwei Schwingfenster inklusive Innenverkleidung und Anschluss.',
     ort: 'Nürnberg-Mögeldorf, 2025',
     alt: 'Zwei neu eingebaute Dachfenster in einem Ziegeldach',
   },
   {
-    bild: '/images/projekt-4.jpg',
+    bild: '/images/projekt-4.webp',
     titel: 'Dachrinne in Zink',
     detail: 'Rinne und Fallrohre passgenau gekantet und montiert.',
     ort: 'Schwabach, 2024',
@@ -147,7 +147,7 @@ const referenzen = [
     <section class="hero">
       <img
         class="hero-bild"
-        src="/images/hero-dach.jpg"
+        src="/images/hero-dach.webp"
         width="1600"
         height="1067"
         alt="Dachdecker von Brandner & Sohn deckt im Abendlicht ein Steildach mit neuen Ziegeln ein"
@@ -192,7 +192,7 @@ const referenzen = [
           <article class="leistung-notfall">
             <div class="notfall-media">
               <img
-                src="/images/detail-handwerk.jpg"
+                src="/images/detail-handwerk.webp"
                 width="1200"
                 height="800"
                 alt="Hände in Lederhandschuhen legen einen Tondachziegel auf die Lattung"
@@ -332,6 +332,16 @@ const referenzen = [
     <!-- ————— Über uns ————— -->
     <section class="section ueber">
       <div class="container ueber-inner">
+        <figure class="ueber-bild">
+          <img
+            src="/images/team.webp"
+            width="1200"
+            height="800"
+            alt="Drei Dachdecker des Betriebs stehen am Feierabend auf dem Gerüst und blicken über die Dächer der Stadt"
+            loading="lazy"
+            decoding="async"
+          />
+        </figure>
         <div class="ueber-card">
           <h2>Handwerk mit Handschlag-Qualität</h2>
           <p>
@@ -1304,5 +1314,29 @@ const referenzen = [
   .warum-tile p {
     color: var(--c-primary-soft-2);
     font-size: 0.98rem;
+  }
+
+  /* Betriebs-Sektion: Team-Bild neben den Text (Bilder 28.07. eingebaut) */
+  .ueber-inner {
+    gap: clamp(1.75rem, 4vw, 3rem);
+    align-items: center;
+  }
+  @media (min-width: 900px) {
+    .ueber-inner {
+      grid-template-columns: 0.95fr 1.05fr;
+    }
+  }
+  .ueber-bild {
+    margin: 0;
+    aspect-ratio: 3 / 2;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--c-primary-soft-2);
+    box-shadow: var(--shadow-md);
+  }
+  .ueber-bild img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 </style>
