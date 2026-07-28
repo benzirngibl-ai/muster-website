@@ -6,9 +6,15 @@ import { BUSINESS } from '../config';
 // Lead-API (eigener kleiner Dienst, gleiches Muster wie asbest-entfernen.de).
 // Lokal testbar via PUBLIC_LEAD_API=http://localhost:8080 npm run build.
 const LEAD_API = import.meta.env.PUBLIC_LEAD_API ?? 'https://muster-api.k-aizen.de';
-// Cal.com self-hosted auf deutschem Server — Terminanfrage-Demo.
-// Event „Rückruf-Termin" (15 Min) am 21.07. direkt in der Cal-DB angelegt (Row-Copy von 30min).
-const CAL_URL = 'https://cal.k-aizen.de/ben-kaizen/rueckruf';
+
+// Kennung des Betriebs — bestimmt, in welcher Anfragen-App die Meldung landet.
+// Beim Aufsetzen eines echten Kunden hier die Kennung aus `node kunden.mjs --neu` eintragen.
+const KUNDE = import.meta.env.PUBLIC_KUNDE ?? BUSINESS.kunde ?? 'muster';
+
+// Kein Terminkalender mehr (Ben 28.07.): Ein Kalender je Kunde bräuchte ein eigenes
+// Konto, verbundene Kalender und Pflege — und zeigte bei falscher Verknüpfung
+// erfundene Verfügbarkeiten. Stattdessen fragt das Formular einen Rückrufwunsch ab,
+// der als Teil der Anfrage in der App des Betriebs landet.
 
 const TEL_DISPLAY = BUSINESS.telefonDisplay;
 const TEL_HREF = BUSINESS.telefonHref;
@@ -75,6 +81,39 @@ const stimmen = [
     name: 'S. Wagner, Schwabach',
   },
 ];
+
+// Referenz-Projekte — für einen Dachdecker der stärkste Beweis. Beim Kunden-Rollout
+// durch ECHTE Projektfotos des Betriebs ersetzen (siehe README, Schritt 3a).
+const referenzen = [
+  {
+    bild: '/images/projekt-1.jpg',
+    titel: 'Neueindeckung Steildach',
+    detail: 'Tondachziegel naturrot, komplett mit neuer Lattung und Unterspannbahn.',
+    ort: 'Nürnberg-Erlenstegen, 2025',
+    alt: 'Frisch eingedecktes Steildach mit naturroten Tonziegeln an einem Einfamilienhaus',
+  },
+  {
+    bild: '/images/projekt-2.jpg',
+    titel: 'Flachdach-Abdichtung',
+    detail: 'Garagendach mit zweilagiger Bitumenbahn — geprüft dicht übergeben.',
+    ort: 'Fürth-Dambach, 2024',
+    alt: 'Frisch abgedichtetes Flachdach einer Garage mit dunkler Bitumenbahn',
+  },
+  {
+    bild: '/images/projekt-3.jpg',
+    titel: 'Dachfenster-Einbau',
+    detail: 'Zwei Schwingfenster inklusive Innenverkleidung und Anschluss.',
+    ort: 'Nürnberg-Mögeldorf, 2025',
+    alt: 'Zwei neu eingebaute Dachfenster in einem Ziegeldach',
+  },
+  {
+    bild: '/images/projekt-4.jpg',
+    titel: 'Dachrinne in Zink',
+    detail: 'Rinne und Fallrohre passgenau gekantet und montiert.',
+    ort: 'Schwabach, 2024',
+    alt: 'Neu montierte Dachrinne aus Zink an einer Traufkante, Nahaufnahme',
+  },
+];
 ---
 
 <Base title="Dachdeckerei Brandner & Sohn — Meisterbetrieb Nürnberg">
@@ -104,104 +143,87 @@ const stimmen = [
   </header>
 
   <main id="main">
-    <!-- ————— Hero ————— -->
+    <!-- ————— Hero: großes Bild, Text auf Abdunkelung (Design: Fable, 28.07.) ————— -->
     <section class="hero">
-      <div class="container hero-grid">
-        <div class="hero-copy">
-          <p class="hero-eyebrow">
-            <Icon name="map-pin" size={16} /> Nürnberg &amp; Umgebung · seit 1987
-          </p>
-          <h1>Ihr Dach in Meisterhand.</h1>
-          <p class="hero-lead">
-            Reparatur, Neueindeckung, Flachdach und Dachfenster — vom Familienbetrieb
-            in zweiter Generation. Festes Angebot innerhalb von 24 Stunden.
-          </p>
-          <div class="hero-ctas">
-            <a href="#anfrage" class="btn btn-primary">
-              Jetzt Anfrage senden <Icon name="arrow-right" size={18} />
-            </a>
-            <a href={TEL_HREF} class="btn btn-ghost">
-              <Icon name="phone" size={18} /> {TEL_DISPLAY}
-            </a>
-          </div>
-          <ul class="trust-row" aria-label="Auszeichnungen und Kennzahlen">
-            <li><Icon name="shield-check" size={18} /> Meisterbetrieb der Dachdecker-Innung</li>
-            <li><Icon name="star" size={16} /> 4,9 von 5 · 87 Kundenbewertungen</li>
-            <li><Icon name="clock" size={18} /> Rückruf meist innerhalb von 2 Stunden</li>
-          </ul>
+      <img
+        class="hero-bild"
+        src="/images/hero-dach.jpg"
+        width="1600"
+        height="1067"
+        alt="Dachdecker von Brandner & Sohn deckt im Abendlicht ein Steildach mit neuen Ziegeln ein"
+        loading="eager"
+        fetchpriority="high"
+        decoding="async"
+      />
+      <div class="hero-schleier" aria-hidden="true"></div>
+      <div class="container hero-inhalt">
+        <p class="hero-ort">
+          <Icon name="map-pin" size={16} /> Nürnberg &amp; Umgebung · seit 1987
+        </p>
+        <h1>Ihr Dach in Meisterhand.</h1>
+        <p class="hero-lead">
+          Reparatur, Neueindeckung, Flachdach und Dachfenster — vom Familienbetrieb
+          in zweiter Generation. Festes Angebot innerhalb von 24 Stunden.
+        </p>
+        <div class="hero-ctas">
+          <a href="#anfrage" class="btn btn-primary">
+            Jetzt Anfrage senden <Icon name="arrow-right" size={18} />
+          </a>
+          <a href={TEL_HREF} class="btn btn-light">
+            <Icon name="phone" size={18} /> {TEL_DISPLAY}
+          </a>
         </div>
-
-        <div class="hero-visual" aria-hidden="true">
-          <svg viewBox="0 0 520 430" class="hero-art" role="img">
-            <defs>
-              <pattern id="tiles" width="56" height="30" patternUnits="userSpaceOnUse">
-                <rect width="56" height="30" fill="#C2410C"></rect>
-                <path d="M-14 30a14 14 0 0 1 28 0M14 30a14 14 0 0 1 28 0M42 30a14 14 0 0 1 28 0" fill="none" stroke="rgba(255,255,255,0.28)" stroke-width="2.5"></path>
-                <path d="M0 15a14 14 0 0 1 28 0M28 15a14 14 0 0 1 28 0" fill="none" stroke="rgba(122,40,8,0.35)" stroke-width="2.5"></path>
-              </pattern>
-              <clipPath id="roofClip">
-                <path d="M52 196 260 52l208 144z"></path>
-              </clipPath>
-            </defs>
-            <ellipse cx="260" cy="392" rx="215" ry="18" fill="#E7E5E4"></ellipse>
-            <!-- Fassade -->
-            <rect x="104" y="196" width="312" height="180" fill="#FFFFFF" stroke="#D6D3D1" stroke-width="2"></rect>
-            <!-- Tür + Fenster -->
-            <rect x="238" y="284" width="52" height="92" rx="3" fill="#1C1917"></rect>
-            <circle cx="280" cy="332" r="3" fill="#FAFAF9"></circle>
-            <g stroke="#A8A29E" stroke-width="2" fill="#FFF7ED">
-              <rect x="136" y="230" width="62" height="62" rx="3"></rect>
-              <rect x="322" y="230" width="62" height="62" rx="3"></rect>
-              <rect x="136" y="312" width="62" height="62" rx="3"></rect>
-              <rect x="322" y="312" width="62" height="62" rx="3"></rect>
-            </g>
-            <path d="M167 230v62M136 261h62M353 230v62M322 261h62M167 312v62M136 343h62M353 312v62M322 343h62" stroke="#A8A29E" stroke-width="2"></path>
-            <!-- Kamin -->
-            <rect x="336" y="86" width="42" height="78" fill="#292524"></rect>
-            <rect x="330" y="76" width="54" height="14" rx="3" fill="#1C1917"></rect>
-            <!-- Dach mit Ziegel-Muster -->
-            <path d="M52 196 260 52l208 144z" fill="url(#tiles)" clip-path="url(#roofClip)"></path>
-            <path d="M40 200 260 48l220 152" fill="none" stroke="#1C1917" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"></path>
-            <!-- Dachfenster -->
-            <g transform="rotate(-34.5 175 150)">
-              <rect x="150" y="128" width="52" height="44" rx="4" fill="#FFF7ED" stroke="#1C1917" stroke-width="4"></rect>
-              <path d="M176 130v40" stroke="#1C1917" stroke-width="3"></path>
-            </g>
-          </svg>
-          <div class="hero-chip chip-top">
-            <Icon name="shield-check" size={18} />
-            <span><strong>Meisterbetrieb</strong><br />2. Generation</span>
-          </div>
-          <div class="hero-chip chip-bottom">
-            <span class="stars" aria-hidden="true">
-              <Icon name="star" size={15} /><Icon name="star" size={15} /><Icon name="star" size={15} /><Icon name="star" size={15} /><Icon name="star" size={15} />
-            </span>
-            <span><strong>4,9 / 5</strong> · 87 Bewertungen</span>
-          </div>
-        </div>
+        <ul class="trust-row" aria-label="Auszeichnungen und Kennzahlen">
+          <li><Icon name="shield-check" size={18} /> Meisterbetrieb der Dachdecker-Innung</li>
+          <li><Icon name="star" size={16} /> 4,9 von 5 · 87 Kundenbewertungen</li>
+          <li><Icon name="clock" size={18} /> Rückruf meist innerhalb von 2 Stunden</li>
+        </ul>
       </div>
     </section>
 
-    <!-- ————— Leistungen ————— -->
+    <!-- ————— Leistungen: Notfall-Panel + Verzeichnis (kein Kartenraster) ————— -->
     <section class="section" id="leistungen">
       <div class="container">
         <div class="section-head">
-          <span class="kicker">Leistungen</span>
           <h2>Alles rund ums Dach — aus einer Hand</h2>
           <p>Vom losen Ziegel bis zur kompletten Neueindeckung. Ein Ansprechpartner, ein Festpreis, ein sauberes Ergebnis.</p>
         </div>
-        <div class="cards-grid">
-          {
-            leistungen.map((l) => (
-              <article class="card">
-                <span class="card-icon">
-                  <Icon name={l.icon} size={26} />
-                </span>
-                <h3>{l.titel}</h3>
-                <p>{l.text}</p>
-              </article>
-            ))
-          }
+        <div class="leistungen-split">
+          <article class="leistung-notfall">
+            <div class="notfall-media">
+              <img
+                src="/images/detail-handwerk.jpg"
+                width="1200"
+                height="800"
+                alt="Hände in Lederhandschuhen legen einen Tondachziegel auf die Lattung"
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <div class="notfall-text">
+              <h3>{leistungen[0].titel}</h3>
+              <p>{leistungen[0].text}</p>
+              <p class="notfall-hinweis"><Icon name="clock" size={18} /> Notdienst täglich bis 22 Uhr</p>
+              <a href={TEL_HREF} class="btn btn-primary">
+                <Icon name="phone" size={18} /> {TEL_DISPLAY}
+              </a>
+            </div>
+          </article>
+          <ul class="leistungen-liste">
+            {
+              leistungen.slice(1).map((l) => (
+                <li>
+                  <span class="liste-icon" aria-hidden="true">
+                    <Icon name={l.icon} size={22} />
+                  </span>
+                  <div>
+                    <h3>{l.titel}</h3>
+                    <p>{l.text}</p>
+                  </div>
+                </li>
+              ))
+            }
+          </ul>
         </div>
       </div>
     </section>
@@ -210,7 +232,6 @@ const stimmen = [
     <section class="section warum">
       <div class="container">
         <div class="section-head">
-          <span class="kicker">Warum Brandner &amp; Sohn</span>
           <h2>Vier Dinge, auf die Sie sich verlassen können</h2>
         </div>
         <div class="warum-grid">
@@ -234,11 +255,36 @@ const stimmen = [
       </div>
     </section>
 
+    <!-- ————— Referenzen (NEU): der dunkle Block verspricht, die Bilder lösen ein ————— -->
+    <section class="section referenzen" id="referenzen">
+      <div class="container">
+        <div class="section-head">
+          <h2>Über 2.400 Dächer seit 1987 — vier aktuelle davon</h2>
+          <p>Jede Baustelle vom Meister abgenommen, jeden Abend besenrein hinterlassen.</p>
+        </div>
+        <div class="ref-galerie">
+          {
+            referenzen.map((r) => (
+              <figure class="ref">
+                <div class="ref-media">
+                  <img src={r.bild} width="1200" height="800" alt={r.alt} loading="lazy" decoding="async" />
+                </div>
+                <figcaption>
+                  <strong>{r.titel}</strong>
+                  <span class="ref-detail">{r.detail}</span>
+                  <span class="ref-ort">{r.ort}</span>
+                </figcaption>
+              </figure>
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
     <!-- ————— Ablauf ————— -->
     <section class="section" id="ablauf">
       <div class="container">
         <div class="section-head">
-          <span class="kicker">So läuft&#8217;s ab</span>
           <h2>Von der Anfrage zum fertigen Dach — in drei Schritten</h2>
         </div>
         <ol class="ablauf-grid">
@@ -255,21 +301,24 @@ const stimmen = [
       </div>
     </section>
 
-    <!-- ————— Bewertungen ————— -->
+    <!-- ————— Bewertungen: ein großes Zitat, zwei kleine ————— -->
     <section class="section stimmen">
       <div class="container">
         <div class="section-head">
-          <span class="kicker">Kundenstimmen</span>
           <h2>Das sagen Hausbesitzer aus der Region</h2>
           <p>4,9 von 5 Sternen aus 87 Bewertungen.</p>
         </div>
-        <div class="stimmen-grid">
+        <figure class="stimme-gross">
+          <span class="stars" aria-label="5 von 5 Sternen">
+            <Icon name="star" size={17} /><Icon name="star" size={17} /><Icon name="star" size={17} /><Icon name="star" size={17} /><Icon name="star" size={17} />
+          </span>
+          <blockquote>„{stimmen[0].text}&#8220;</blockquote>
+          <figcaption>{stimmen[0].name}</figcaption>
+        </figure>
+        <div class="stimmen-reihe">
           {
-            stimmen.map((s) => (
-              <figure class="stimme">
-                <span class="stars" aria-label="5 von 5 Sternen">
-                  <Icon name="star" size={16} /><Icon name="star" size={16} /><Icon name="star" size={16} /><Icon name="star" size={16} /><Icon name="star" size={16} />
-                </span>
+            stimmen.slice(1).map((s) => (
+              <figure class="stimme-klein">
                 <blockquote>„{s.text}&#8220;</blockquote>
                 <figcaption>{s.name}</figcaption>
               </figure>
@@ -284,7 +333,6 @@ const stimmen = [
     <section class="section ueber">
       <div class="container ueber-inner">
         <div class="ueber-card">
-          <span class="kicker">Der Betrieb</span>
           <h2>Handwerk mit Handschlag-Qualität</h2>
           <p>
             Die Dachdeckerei Brandner &amp; Sohn wurde 1987 von Georg Brandner gegründet.
@@ -309,7 +357,6 @@ const stimmen = [
     <section class="section anfrage" id="anfrage">
       <div class="container">
         <div class="section-head">
-          <span class="kicker">Kostenlos &amp; unverbindlich</span>
           <h2>Beschreiben Sie kurz, was zu tun ist</h2>
           <p>Ihre Anfrage landet <strong>sofort</strong> bei uns auf dem Handy — Rückruf meist innerhalb von 2 Stunden.</p>
         </div>
@@ -341,11 +388,11 @@ const stimmen = [
               </ul>
             </div>
             <div class="info-block termin-block">
-              <h3>Lieber gleich einen Rückruf-Termin?</h3>
-              <p class="info-sub">Wählen Sie online ein Zeitfenster — auch abends um zehn, auch vom Sofa aus.</p>
-              <a href={CAL_URL} class="btn btn-light" target="_blank" rel="noopener">
-                <Icon name="calendar" size={18} /> Rückruf-Termin wählen
-              </a>
+              <h3>Wann passt es Ihnen?</h3>
+              <p class="info-sub">
+                Sagen Sie im Formular kurz, wann wir anrufen sollen — vormittags, abends,
+                am Wochenende. Wir richten uns danach.
+              </p>
             </div>
           </div>
 
@@ -376,9 +423,22 @@ const stimmen = [
               <textarea id="f-nachricht" name="nachricht" required rows="4" maxlength="1000" placeholder="z. B.: Nach dem Sturm fehlen ein paar Ziegel, es tropft in den Speicher."></textarea>
             </div>
 
-            <div class="feld">
-              <label for="f-email">E-Mail <span class="optional">(optional)</span></label>
-              <input type="email" id="f-email" name="email" autocomplete="email" inputmode="email" maxlength="200" />
+            <div class="feld-reihe">
+              <div class="feld">
+                <label for="f-rueckruf">Wann sollen wir zurückrufen? <span class="optional">(optional)</span></label>
+                <select id="f-rueckruf" name="rueckruf">
+                  <option value="">Egal — melden Sie sich einfach</option>
+                  <option value="Vormittag">Vormittags</option>
+                  <option value="Nachmittag">Nachmittags</option>
+                  <option value="Abend (nach 17 Uhr)">Abends, nach 17 Uhr</option>
+                  <option value="Am Wochenende">Am Wochenende</option>
+                </select>
+                <small>Damit wir Sie nicht auf dem Gerüst erwischen.</small>
+              </div>
+              <div class="feld">
+                <label for="f-email">E-Mail <span class="optional">(optional)</span></label>
+                <input type="email" id="f-email" name="email" autocomplete="email" inputmode="email" maxlength="200" />
+              </div>
             </div>
 
             <!-- Honeypot gegen Bots — für Menschen unsichtbar -->
@@ -387,6 +447,8 @@ const stimmen = [
               <input type="text" id="f-website" name="website" tabindex="-1" autocomplete="off" />
             </div>
             <input type="hidden" name="quelle" value="muster-website" />
+            {/* Steuert, in welcher Anfragen-App die Meldung landet. Pro Kunde in config.ts setzen. */}
+            <input type="hidden" name="kunde" value={KUNDE} />
 
             <div class="feld feld-check">
               <input type="checkbox" id="f-einwilligung" name="einwilligung" required />
@@ -542,172 +604,7 @@ const stimmen = [
   }
 
   /* ————— Hero ————— */
-  .hero {
-    background: linear-gradient(180deg, #fff 0%, var(--c-primary-soft) 100%);
-    border-bottom: 1px solid var(--c-primary-soft-2);
-  }
-  .hero-grid {
-    display: grid;
-    gap: clamp(2rem, 5vw, 4rem);
-    align-items: center;
-    padding-block: clamp(3rem, 7vw, 5.5rem);
-  }
-  @media (min-width: 900px) {
-    .hero-grid {
-      grid-template-columns: 1.05fr 0.95fr;
-    }
-  }
-  .hero-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    font-family: var(--font-head);
-    font-weight: 500;
-    font-size: 0.92rem;
-    color: var(--c-primary);
-    background: #fff;
-    border: 1px solid var(--c-primary-soft-2);
-    border-radius: 999px;
-    padding: 0.35rem 0.9rem;
-    margin-bottom: 1.25rem;
-  }
-  .hero h1 {
-    font-size: clamp(2.375rem, 6vw, 3.5rem);
-    font-weight: 700;
-    margin-bottom: 1rem;
-  }
-  .hero-lead {
-    font-size: clamp(1.125rem, 2vw, 1.3125rem);
-    color: var(--c-body);
-    margin-bottom: 1.75rem;
-  }
-  .hero-ctas {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.8rem;
-    margin-bottom: 1.9rem;
-  }
-  .trust-row {
-    list-style: none;
-    padding: 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem 1.4rem;
-  }
-  .trust-row li {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    font-size: 0.95rem;
-    color: var(--c-body);
-    font-weight: 600;
-  }
-  .trust-row li :global(svg) {
-    color: var(--c-primary);
-    flex-shrink: 0;
-  }
-
-  .hero-visual {
-    position: relative;
-    max-width: 520px;
-    margin-inline: auto;
-  }
-  .hero-art {
-    width: 100%;
-    height: auto;
-    filter: drop-shadow(0 18px 30px rgba(28, 25, 23, 0.12));
-  }
-  .hero-chip {
-    position: absolute;
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    background: #fff;
-    border: 1px solid var(--c-border);
-    border-radius: 12px;
-    box-shadow: var(--shadow-md);
-    padding: 0.6rem 0.9rem;
-    font-size: 0.85rem;
-    line-height: 1.25;
-    color: var(--c-body);
-  }
-  .hero-chip strong {
-    color: var(--c-ink);
-    font-family: var(--font-head);
-  }
-  .hero-chip :global(svg) {
-    color: var(--c-primary);
-    flex-shrink: 0;
-  }
-  .chip-top {
-    top: 8%;
-    left: -2%;
-  }
-  .chip-bottom {
-    bottom: 6%;
-    right: -2%;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-  }
-  .stars {
-    display: inline-flex;
-    gap: 2px;
-    color: #f59e0b;
-  }
-  @media (max-width: 899px) {
-    .hero-visual {
-      max-width: 420px;
-    }
-    .chip-top {
-      left: 0;
-    }
-    .chip-bottom {
-      right: 0;
-    }
-  }
-
   /* ————— Leistungen ————— */
-  .cards-grid {
-    display: grid;
-    gap: 1.25rem;
-    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-  }
-  .card {
-    background: var(--c-surface);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-lg);
-    padding: 1.75rem 1.5rem;
-    box-shadow: var(--shadow-sm);
-    transition:
-      box-shadow 200ms ease,
-      transform 200ms ease,
-      border-color 200ms ease;
-  }
-  .card:hover {
-    box-shadow: var(--shadow-md);
-    transform: translateY(-3px);
-    border-color: var(--c-primary-soft-2);
-  }
-  .card-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
-    background: var(--c-primary-soft);
-    color: var(--c-primary);
-    margin-bottom: 1.1rem;
-  }
-  .card h3 {
-    font-size: 1.1875rem;
-    margin-bottom: 0.5rem;
-  }
-  .card p {
-    font-size: 1rem;
-    color: var(--c-soft);
-  }
 
   /* ————— Warum ————— */
   .warum {
@@ -789,29 +686,6 @@ const stimmen = [
   .stimmen {
     background: var(--c-primary-soft);
     border-block: 1px solid var(--c-primary-soft-2);
-  }
-  .stimmen-grid {
-    display: grid;
-    gap: 1.25rem;
-    grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
-  }
-  .stimme {
-    background: #fff;
-    border: 1px solid var(--c-primary-soft-2);
-    border-radius: var(--radius-lg);
-    padding: 1.6rem 1.5rem;
-    box-shadow: var(--shadow-sm);
-  }
-  .stimme blockquote {
-    margin-block: 0.8rem 1rem;
-    color: var(--c-body);
-    font-size: 1rem;
-  }
-  .stimme figcaption {
-    font-family: var(--font-head);
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--c-ink);
   }
   .stimmen-note {
     margin-top: 1.5rem;
@@ -975,6 +849,7 @@ const stimmen = [
   .feld input[type='text'],
   .feld input[type='tel'],
   .feld input[type='email'],
+  .feld select,
   .feld textarea {
     font: inherit;
     font-size: 1rem;
@@ -991,10 +866,20 @@ const stimmen = [
     resize: vertical;
     min-height: 110px;
   }
+  /* Eigenes Pfeil-Symbol, damit die Auswahl in allen Browsern gleich aussieht */
+  .feld select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%23666' stroke-width='1.8' stroke-linecap='round' d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.95rem center;
+    padding-right: 2.5rem;
+    cursor: pointer;
+  }
   .feld input:focus,
+  .feld select:focus,
   .feld textarea:focus {
     border-color: var(--c-primary);
-    background: #fff;
+    background-color: #fff;
     outline: none;
     box-shadow: 0 0 0 3px rgba(194, 65, 12, 0.15);
   }
@@ -1096,5 +981,328 @@ const stimmen = [
   }
   .footer-demo a {
     color: #fdba74;
+  }
+
+  /* ═══════ REDESIGN 28.07.2026 (Design: Fable 5, Regeln: impeccable craft-floor) ═══════ */
+
+  /* ————— Hero: großes Bild, Text auf Abdunkelung ————— */
+  .hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background: var(--c-ink); /* Fallback: Bild fehlt → dunkle Fläche, Text bleibt lesbar */
+  }
+  .hero-bild {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: -2;
+  }
+  /* Abdunkelung ist hier Lesbarkeits-Werkzeug, keine Deko: Weiß auf rgba(28,25,23,.6+)
+     hält ≥4.5:1 auch über hellen Bildpartien (Himmel). */
+  .hero-schleier {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+      linear-gradient(180deg, rgba(28, 25, 23, 0.25) 0%, rgba(28, 25, 23, 0.1) 45%, rgba(28, 25, 23, 0.7) 100%),
+      linear-gradient(78deg, rgba(28, 25, 23, 0.88) 0%, rgba(28, 25, 23, 0.62) 48%, rgba(28, 25, 23, 0.2) 82%, rgba(28, 25, 23, 0.08) 100%);
+  }
+  @media (max-width: 760px) {
+    .hero-schleier {
+      background: linear-gradient(180deg, rgba(28, 25, 23, 0.62) 0%, rgba(28, 25, 23, 0.5) 55%, rgba(28, 25, 23, 0.78) 100%);
+    }
+  }
+  .hero-inhalt {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    min-height: clamp(540px, 74vh, 760px);
+    padding-block: clamp(3.5rem, 8vw, 5.5rem) clamp(1.75rem, 4vw, 2.5rem);
+  }
+  .hero-ort {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-head);
+    font-weight: 500;
+    font-size: 1rem;
+    color: var(--c-primary-soft-2);
+    margin-bottom: 1.1rem;
+  }
+  .hero h1 {
+    color: #fff;
+    font-size: clamp(2.5rem, 6.5vw, 4rem);
+    font-weight: 700;
+    max-width: 16ch;
+    margin-bottom: 1rem;
+  }
+  .hero-lead {
+    font-size: clamp(1.125rem, 2vw, 1.3125rem);
+    color: var(--c-primary-soft); /* getönt aus dem Farbton — nie Grau auf Farbfläche */
+    max-width: 46ch;
+    margin-bottom: 1.9rem;
+  }
+  .hero-ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+  }
+  .hero a:focus-visible {
+    outline-color: rgba(255, 255, 255, 0.85);
+  }
+  .hero .trust-row {
+    width: 100%;
+    margin-top: clamp(2.5rem, 6vw, 3.75rem);
+    padding-top: 1.2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+    list-style: none;
+    padding-inline: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1.6rem;
+  }
+  .hero .trust-row li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--c-primary-soft);
+  }
+  .hero .trust-row li :global(svg) {
+    color: #fdba74;
+    flex-shrink: 0;
+  }
+  .stars {
+    display: inline-flex;
+    gap: 2px;
+    color: #f59e0b;
+  }
+
+  /* Der EINE inszenierte Moment der Seite: gestaffelter Hero-Auftritt beim Laden.
+     Nicht auf andere Sektionen kopieren (craft-floor: one authored moment). */
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-ort,
+    .hero h1,
+    .hero-lead,
+    .hero-ctas,
+    .hero .trust-row {
+      animation: hero-auftritt 640ms cubic-bezier(0.22, 0.7, 0.3, 1) both;
+    }
+    .hero h1 { animation-delay: 70ms; }
+    .hero-lead { animation-delay: 140ms; }
+    .hero-ctas { animation-delay: 210ms; }
+    .hero .trust-row { animation-delay: 320ms; }
+  }
+  @keyframes hero-auftritt {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ————— Referenzen (neu) — Zickzack statt 2×2-Raster ————— */
+  .referenzen {
+    background: var(--c-surface);
+    border-block: 1px solid var(--c-border);
+  }
+  .ref-galerie {
+    display: grid;
+    gap: 2.5rem 1.5rem;
+  }
+  @media (min-width: 820px) {
+    .ref-galerie {
+      grid-template-columns: repeat(12, 1fr);
+      align-items: start;
+    }
+    .ref:nth-child(1) { grid-column: span 7; }
+    .ref:nth-child(2) { grid-column: span 5; padding-top: 3rem; }
+    .ref:nth-child(3) { grid-column: span 5; }
+    .ref:nth-child(4) { grid-column: span 7; padding-top: 3rem; }
+  }
+  .ref {
+    margin: 0;
+  }
+  .ref-media {
+    aspect-ratio: 3 / 2; /* hält das Layout auch dann, wenn ein Bild fehlt */
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--c-primary-soft-2);
+    box-shadow: var(--shadow-md);
+  }
+  .ref-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .ref-media img { transition: transform 400ms ease; }
+    .ref:hover .ref-media img { transform: scale(1.03); }
+  }
+  .ref figcaption {
+    padding-top: 0.9rem;
+    display: grid;
+    gap: 0.15rem;
+  }
+  .ref figcaption strong {
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: 1.0625rem;
+    color: var(--c-ink);
+  }
+  .ref-detail {
+    color: var(--c-body);
+    font-size: 0.98rem;
+    max-width: 52ch;
+  }
+  .ref-ort {
+    color: var(--c-soft);
+    font-size: 0.88rem;
+  }
+
+  /* ————— Leistungen: Notfall-Panel + Verzeichnis (ersetzt das 6er-Kartenraster) ————— */
+  .leistungen-split {
+    display: grid;
+    gap: 2rem;
+  }
+  @media (min-width: 900px) {
+    .leistungen-split {
+      grid-template-columns: 0.9fr 1.1fr;
+      align-items: start;
+      gap: clamp(2rem, 4vw, 3.5rem);
+    }
+  }
+  .leistung-notfall {
+    background: var(--c-primary-soft);
+    border: 1px solid var(--c-primary-soft-2);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .notfall-media {
+    aspect-ratio: 3 / 2;
+    background: var(--c-primary-soft-2);
+  }
+  .notfall-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .notfall-text {
+    padding: 1.6rem 1.5rem 1.75rem;
+  }
+  .notfall-text h3 {
+    font-size: 1.375rem;
+    margin-bottom: 0.5rem;
+  }
+  .notfall-text > p {
+    color: var(--c-body);
+  }
+  .notfall-hinweis {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.9rem;
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: 0.98rem;
+    color: var(--c-primary-dark);
+  }
+  .notfall-hinweis :global(svg) {
+    color: var(--c-primary);
+    flex-shrink: 0;
+  }
+  .notfall-text .btn {
+    margin-top: 1rem;
+  }
+  .leistungen-liste {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .leistungen-liste li {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding-block: 1.35rem;
+  }
+  .leistungen-liste li:first-child {
+    padding-top: 0.25rem;
+  }
+  .leistungen-liste li + li {
+    border-top: 1px solid var(--c-border);
+  }
+  .liste-icon {
+    flex-shrink: 0;
+    color: var(--c-primary);
+    margin-top: 4px;
+  }
+  .leistungen-liste h3 {
+    font-size: 1.125rem;
+    margin-bottom: 0.3rem;
+  }
+  .leistungen-liste p {
+    font-size: 1rem;
+    color: var(--c-body);
+  }
+
+  /* ————— Bewertungen: ein großes Zitat, zwei kleine ————— */
+  .stimmen {
+    background: var(--c-primary-soft);
+    border-block: 1px solid var(--c-primary-soft-2);
+  }
+  .stimmen .section-head p {
+    color: var(--c-primary-dark);
+    font-weight: 600;
+  }
+  .stimme-gross {
+    margin: 0 0 2.75rem;
+    border-left: 4px solid var(--c-primary);
+    padding-left: clamp(1.1rem, 3vw, 1.75rem);
+  }
+  .stimme-gross blockquote {
+    font-family: var(--font-head);
+    font-weight: 500;
+    font-size: clamp(1.3rem, 2.6vw, 1.625rem);
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    color: var(--c-ink);
+    max-width: 40ch;
+    margin: 0.9rem 0 1.1rem;
+  }
+  .stimme-gross figcaption,
+  .stimme-klein figcaption {
+    font-family: var(--font-head);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--c-ink);
+  }
+  .stimmen-reihe {
+    display: grid;
+    gap: 2rem;
+  }
+  @media (min-width: 720px) {
+    .stimmen-reihe {
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+    }
+  }
+  .stimme-klein {
+    margin: 0;
+    border-top: 1px solid rgba(194, 65, 12, 0.22);
+    padding-top: 1.4rem;
+  }
+  .stimme-klein blockquote {
+    color: var(--c-body);
+    font-size: 1.0625rem;
+    margin: 0 0 0.9rem;
+  }
+
+  /* Warum-Block: Sekundärtext getönt statt grau (craft-floor) */
+  .warum-tile p {
+    color: var(--c-primary-soft-2);
+    font-size: 0.98rem;
   }
 </style>

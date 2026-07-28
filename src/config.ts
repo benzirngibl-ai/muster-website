@@ -13,6 +13,12 @@ export const BUSINESS = {
   indexable: false,
 
   domain: 'https://muster.k-aizen.de', // ohne Slash am Ende, = astro.config site
+
+  /** Kennung des Betriebs in der Anfragen-App. Bestimmt, auf wessen Handy die
+   *  Anfrage gepusht wird. Beim Aufsetzen mit `node kunden.mjs --neu <kennung> "<Name>"`
+   *  erzeugen und hier eintragen — sonst landen die Anfragen in der Demo. */
+  kunde: 'muster',
+
   name: 'Dachdeckerei Brandner & Sohn',
   branche: 'Dachdeckerei · Meisterbetrieb',
   /** Schema.org-Typ des Betriebs — pro Gewerk wählen:
