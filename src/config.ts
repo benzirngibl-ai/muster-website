@@ -39,6 +39,17 @@ export const BUSINESS = {
   /** Einsatzgebiet — wird areaServed im Schema + llms.txt. */
   einsatzgebiet: ['Nürnberg', 'Fürth', 'Erlangen', 'Schwabach'],
 
+  /** Chat-Assistent: voller Endpunkt oder leer.
+   *  Leer = das Widget lädt nicht. Das ist die sichere Voreinstellung — eine
+   *  Chat-Blase ohne Backend dahinter ist schlimmer als gar keine.
+   *
+   *  Welchen Betrieb der Dienst bedient, entscheidet er am Origin der Anfrage,
+   *  nicht an dieser URL. Beim Aufsetzen eines echten Kunden gehört seine
+   *  Domain deshalb in die Mandanten-Registry des Chatbots
+   *  (`k-aizen/website/chatbot/src/mandanten.ts`) — sonst antwortet der Dienst
+   *  mit 403, und das zu Recht. */
+  chatBotUrl: 'https://chat.k-aizen.de/chat',
+
   /** Öffnungszeiten im Schema.org-Format. */
   openingHours: ['Mo-Th 07:00-16:30', 'Fr 07:00-14:00'],
 

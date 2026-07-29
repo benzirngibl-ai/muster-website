@@ -24,20 +24,27 @@ const {
 // Kanonische URL (SEO-Basis, auch @id-Anker fürs Schema).
 const canonical = new URL(Astro.url.pathname, Astro.site).href;
 
-// KI-Chat-Widget-Konfig, gespeist aus BUSINESS. Backend-URL kommt aus der
-// Umgebung (PUBLIC_CHAT_BOT_URL) — leer lassen = Widget lädt nicht (nie faken).
-const chatBotUrl = import.meta.env.PUBLIC_CHAT_BOT_URL || '';
+// KI-Chat-Widget-Konfig, gespeist aus BUSINESS. Die Backend-URL steht in der
+// Kunden-Konfig (config.ts); die Umgebungsvariable bleibt als Notausgang für
+// Test-Deploys. Beides leer = Widget lädt nicht (nie faken).
+const chatBotUrl = BUSINESS.chatBotUrl || import.meta.env.PUBLIC_CHAT_BOT_URL || '';
 const ort0 = BUSINESS.einsatzgebiet?.[0] ?? BUSINESS.ort;
+
+// Begrüßung und Vorschläge dürfen nichts versprechen, was der Assistent nicht
+// halten darf. Die frühere Fassung kündigte Auskunft „zu Preisen" an und bot als
+// ersten Knopf „Was kostet … ungefähr?" — genau die eine Frage, die er nicht
+// beantwortet, weil der Betrieb erst schaut und dann ein Festpreis-Angebot
+// schreibt. Der Besucher wäre mit einer Absage in den Chat gestartet.
 const chatConfig = JSON.stringify({
   botUrl: chatBotUrl,
   name: BUSINESS.name,
   assistant: 'Online-Assistent',
   address: 'Sie',
-  greeting: `Hallo! Ich bin der Online-Assistent von ${BUSINESS.name}. Ich beantworte Ihnen Fragen zu Leistungen, Ablauf und Preisen — und nehme Ihre Anfrage gleich auf.`,
+  greeting: `Hallo! Ich bin der Online-Assistent von ${BUSINESS.name}. Fragen Sie mich zu Leistungen, Ablauf und Erreichbarkeit — oder schildern Sie kurz, worum es geht.`,
   suggestions: [
-    (BUSINESS.leistungen?.[0] ? `Was kostet ${BUSINESS.leistungen[0].split(' ')[0].toLowerCase()} ungefähr?` : 'Was kostet das ungefähr?'),
-    `Kommt ihr nach ${ort0}?`,
-    'Wie schnell habt ihr Zeit?',
+    (BUSINESS.leistungen?.[0] ? `Machen Sie ${BUSINESS.leistungen[0].split(' ')[0].toLowerCase()}?` : 'Was machen Sie genau?'),
+    `Kommen Sie nach ${ort0}?`,
+    'Wie läuft das mit dem Angebot ab?',
   ],
 });
 ---
