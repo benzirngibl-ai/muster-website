@@ -210,6 +210,20 @@ export function leadSpeichern(lead) {
   return mitId;
 }
 
+/**
+ * Anfragen aus der Zeit vor den IDs (Juli 2026) haben kein `id`-Feld. Ohne eine
+ * bekämen sie `undefined` in die Adresse — der Stand ließe sich an ihnen nicht
+ * setzen, und zwar still: die App zeigt sie normal an, nur das Antippen scheitert.
+ * Die Ersatzkennung wird aus dem Inhalt abgeleitet, ist also stabil, ohne dass
+ * das Journal umgeschrieben werden muss.
+ */
+function leadKennung(lead) {
+  if (lead.id) return lead.id;
+  return createHash('sha256')
+    .update(`alt|${lead.ts}|${lead.name}|${lead.telefon}`)
+    .digest('hex').slice(0, 16);
+}
+
 /** Anfragen eines Kunden, neueste zuerst — mit Stufe, Kontaktbezug und Notizzahl. */
 export function leadsVonKunde(kunde, grenze = 200) {
   const status = jsonLesen(F_STATUS, {});
@@ -229,10 +243,11 @@ export function leadsVonKunde(kunde, grenze = 200) {
   return eigene.reverse()
     .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0))
     .slice(0, grenze).map((l) => {
+    const id = leadKennung(l);
     const kontakt = kontaktId(l);
-    const stufe = stufeVon(status[l.id]);
+    const stufe = stufeVon(status[id]);
     return {
-      id: l.id, ts: l.ts, name: l.name, telefon: l.telefon, ort: l.ort,
+      id, ts: l.ts, name: l.name, telefon: l.telefon, ort: l.ort,
       nachricht: l.nachricht, email: l.email, rueckruf: l.rueckruf || '',
       kontakt, stufe,
       offen: !istEndstufe(stufe),
@@ -246,7 +261,7 @@ export function leadsVonKunde(kunde, grenze = 200) {
 /** Setzt die Stufe einer Anfrage. Fremde Anfragen sind unerreichbar, auch mit geratener ID. */
 export function stufeSetzen(kunde, leadId, stufe) {
   if (!stufeGueltig(stufe)) return { ok: false, fehler: 'unbekannte Stufe' };
-  const lead = jsonlLesen(F_LEADS).find((l) => l.id === leadId);
+  const lead = jsonlLesen(F_LEADS).find((l) => leadKennung(l) === leadId);
   if (!lead || (lead.kunde || 'muster') !== kunde) return { ok: false, fehler: 'unbekannte Anfrage' };
 
   const alle = jsonLesen(F_STATUS, {});

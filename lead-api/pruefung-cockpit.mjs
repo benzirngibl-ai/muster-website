@@ -93,6 +93,15 @@ writeFileSync(statusDatei, JSON.stringify({
 pruefe('Altbestand wird als „abgeschlossen" gelesen, nicht umgedeutet',
   leadsVonKunde('dachdecker').find((l) => l.id === a2.id).stufe === 'abgeschlossen');
 
+// Anfragen aus der Zeit vor den IDs — genau so liegen sie im echten Journal
+const ohneId = { kunde: 'dachdecker', ts: new Date(Date.now() - 900000).toISOString(), name: 'Max Bergmann', telefon: '0911 4004000', ort: 'Nürnberg', nachricht: 'Altbestand ohne id' };
+(await import('node:fs')).appendFileSync(join(DATA, 'leads.jsonl'), JSON.stringify(ohneId) + '\n');
+const altEintrag = leadsVonKunde('dachdecker').find((l) => l.name === 'Max Bergmann');
+pruefe('id-lose Altanfrage bekommt eine Kennung', /^[a-f0-9]{16}$/.test(altEintrag?.id || ''));
+pruefe('Kennung der Altanfrage ist stabil', leadsVonKunde('dachdecker').find((l) => l.name === 'Max Bergmann').id === altEintrag.id);
+pruefe('Stand einer Altanfrage lässt sich setzen', stufeSetzen('dachdecker', altEintrag.id, 'kontaktiert').ok);
+pruefe('und er bleibt stehen', leadsVonKunde('dachdecker').find((l) => l.name === 'Max Bergmann').stufe === 'kontaktiert');
+
 const kAnna = kontaktId({ telefon: '0170 1234567' });
 const kClara = kontaktId({ telefon: '0170 5556666' });
 
@@ -150,7 +159,7 @@ try {
 
   r = await ruf('/api/anfragen', mitZugang(dach.token));
   const daten = await r.json();
-  pruefe('mit Zugang kommen die eigenen Anfragen', r.status === 200 && daten.anfragen.length === 4);
+  pruefe('mit Zugang kommen die eigenen Anfragen', r.status === 200 && daten.anfragen.length === 5);
   pruefe('Stufen kommen mit', daten.stufen?.length === 5 && daten.stufen[0].id === 'neu');
   pruefe('Betriebsname kommt mit', daten.betrieb === 'Dachdeckerei Brandner');
 
