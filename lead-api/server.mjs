@@ -144,7 +144,7 @@ async function pingApp(kunde, leadId) {
 const TYPEN = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png' };
 
-function appDateiAusliefern(pfad, res) {
+function appDateiAusliefern(pfad, res, nurKopf = false) {
   // Verzeichniswechsel unterbinden — nur Dateien unterhalb von app/
   const datei = join(APP_DIR, pfad.replace(/^\/app\/?/, '') || 'index.html');
   if (!datei.startsWith(APP_DIR) || !existsSync(datei)) return false;
@@ -153,7 +153,7 @@ function appDateiAusliefern(pfad, res) {
   // alten Fassungen. Die übrigen Dateien holt der Service Worker beim Einbau selbst frisch.
   const cache = /sw\.js$|\.html$/.test(datei) ? 'no-cache' : 'public, max-age=3600';
   res.writeHead(200, { 'Content-Type': typ, 'Cache-Control': cache, 'Service-Worker-Allowed': '/app/' });
-  res.end(readFileSync(datei));
+  res.end(nurKopf ? undefined : readFileSync(datei));
   return true;
 }
 
@@ -175,9 +175,14 @@ function koerperLesen(req) {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
-  if (req.method === 'GET' && url.pathname === '/health') {
+  // Prüfwerkzeuge und Zwischenspeicher fragen mit HEAD an — das ist ein GET ohne Rumpf,
+  // kein unbekanntes Verfahren. Vorher lief es in den 404 und sah aus wie ein Ausfall.
+  const nurKopf = req.method === 'HEAD';
+  const holt = req.method === 'GET' || nurKopf;
+
+  if (holt && url.pathname === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
-    return res.end(JSON.stringify({
+    return res.end(nurKopf ? undefined : JSON.stringify({
       ok: true,
       discord: !!DISCORD_WEBHOOK,
       resend: !!process.env.RESEND_API_KEY,
@@ -187,9 +192,9 @@ const server = http.createServer(async (req, res) => {
   }
 
   // ── App-Dateien ──
-  if (req.method === 'GET' && (url.pathname === '/app' || url.pathname.startsWith('/app/'))) {
+  if (holt && (url.pathname === '/app' || url.pathname.startsWith('/app/'))) {
     if (url.pathname === '/app') { res.writeHead(302, { Location: '/app/' }); return res.end(); }
-    if (appDateiAusliefern(url.pathname, res)) return;
+    if (appDateiAusliefern(url.pathname, res, nurKopf)) return;
     res.writeHead(404); return res.end('nicht gefunden');
   }
 

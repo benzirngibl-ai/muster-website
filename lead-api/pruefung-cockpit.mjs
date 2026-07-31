@@ -219,6 +219,11 @@ try {
   r = await ruf('/app/../server.mjs');
   pruefe('Ausbruch aus dem App-Verzeichnis geht nicht', r.status === 404 || !(await r.text()).includes('createServer'));
 
+  r = await ruf('/app/', { method: 'HEAD' });
+  pruefe('HEAD auf die App antwortet wie GET', r.status === 200 && r.headers.get('cache-control') === 'no-cache');
+  r = await ruf('/health', { method: 'HEAD' });
+  pruefe('HEAD auf die Gesundheitsprüfung antwortet', r.status === 200);
+
   const formular = new URLSearchParams({
     kunde: 'dachdecker', name: 'Dieter Ernst', telefon: '0176 4443322', ort: 'Zirndorf',
     nachricht: 'Sturmschaden am First', einwilligung: 'on',
