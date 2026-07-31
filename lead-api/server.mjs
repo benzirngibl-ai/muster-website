@@ -15,7 +15,8 @@ import { fileURLToPath } from 'node:url';
 import { pushSenden } from './push.mjs';
 import {
   kundeAusToken, aboSpeichern, abosVonKunde, aboEntfernen,
-  leadSpeichern, leadsVonKunde, leadStatusSetzen, kundenAlle,
+  leadSpeichern, leadsVonKunde, stufeSetzen, kundenAlle,
+  kontaktDetail, notizAnlegen, notizLoeschen, STUFEN, STUFEN_ENDE,
 } from './kunden.mjs';
 
 const HIER = dirname(fileURLToPath(import.meta.url));
@@ -27,7 +28,7 @@ const RESEND_FROM = process.env.RESEND_FROM || 'Meisterseite Demo <kontakt@k-aiz
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK_URL || '';
 const MENTION_ID = process.env.DISCORD_MENTION_USER_ID || '99982972236607488';
 const SITE = 'https://muster.k-aizen.de';
-const DATA_DIR = '/data';
+const DATA_DIR = process.env.DATA_DIR || '/data';
 const LOG = `${DATA_DIR}/leads.jsonl`;
 
 try { mkdirSync(DATA_DIR, { recursive: true }); } catch {}
@@ -148,8 +149,9 @@ function appDateiAusliefern(pfad, res) {
   const datei = join(APP_DIR, pfad.replace(/^\/app\/?/, '') || 'index.html');
   if (!datei.startsWith(APP_DIR) || !existsSync(datei)) return false;
   const typ = TYPEN[extname(datei)] || 'application/octet-stream';
-  // Der Service Worker darf nie aus dem Zwischenspeicher kommen, sonst hängen Kunden auf alten Fassungen
-  const cache = datei.endsWith('sw.js') ? 'no-cache' : 'public, max-age=3600';
+  // Service Worker und Einstiegsseite nie aus dem Zwischenspeicher, sonst hängen Kunden auf
+  // alten Fassungen. Die übrigen Dateien holt der Service Worker beim Einbau selbst frisch.
+  const cache = /sw\.js$|\.html$/.test(datei) ? 'no-cache' : 'public, max-age=3600';
   res.writeHead(200, { 'Content-Type': typ, 'Cache-Control': cache, 'Service-Worker-Allowed': '/app/' });
   res.end(readFileSync(datei));
   return true;
@@ -203,6 +205,8 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/anfragen' && req.method === 'GET') {
       return jsonAntwort(res, 200, {
         betrieb: kundenAlle()[kunde]?.name || '',
+        stufen: STUFEN,
+        stufenEnde: STUFEN_ENDE,
         anfragen: leadsVonKunde(kunde),
       });
     }
@@ -217,11 +221,38 @@ const server = http.createServer(async (req, res) => {
       return jsonAntwort(res, 200, { ok: true });
     }
 
+    // Stufe einer Anfrage setzen. `erledigt` ist der Weg der ersten App-Fassung —
+    // sie kann noch im Zwischenspeicher eines Geräts liegen und wird nicht umgedeutet.
     const status = url.pathname.match(/^\/api\/anfragen\/([a-f0-9]{16})\/status$/);
     if (status && req.method === 'POST') {
       const b = await koerperLesen(req);
-      leadStatusSetzen(status[1], b.erledigt);
-      return jsonAntwort(res, 200, { ok: true });
+      const stufe = typeof b.stufe === 'string' ? b.stufe
+        : (b.erledigt === true ? 'abgeschlossen' : b.erledigt === false ? 'neu' : null);
+      // „abgeschlossen" ist Altbestand — über das Feld `stufe` darf es niemand neu vergeben
+      if (!stufe || b.stufe === 'abgeschlossen') return jsonAntwort(res, 400, { fehler: 'Stufe fehlt' });
+      const r = stufeSetzen(kunde, status[1], stufe);
+      return jsonAntwort(res, r.ok ? 200 : 404, r);
+    }
+
+    const kontakt = url.pathname.match(/^\/api\/kontakt\/([a-f0-9]{16})$/);
+    if (kontakt && req.method === 'GET') {
+      const d = kontaktDetail(kunde, kontakt[1]);
+      return d ? jsonAntwort(res, 200, d) : jsonAntwort(res, 404, { fehler: 'unbekannter Kontakt' });
+    }
+
+    const notizNeu = url.pathname.match(/^\/api\/kontakt\/([a-f0-9]{16})\/notiz$/);
+    if (notizNeu && req.method === 'POST') {
+      // Erst die Zugehörigkeit prüfen: wer den Kontakt nicht sehen darf, kann ihn auch nicht beschriften
+      if (!kontaktDetail(kunde, notizNeu[1])) return jsonAntwort(res, 404, { fehler: 'unbekannter Kontakt' });
+      const b = await koerperLesen(req);
+      const notiz = notizAnlegen(kunde, notizNeu[1], b.text);
+      return notiz ? jsonAntwort(res, 200, { ok: true, notiz }) : jsonAntwort(res, 400, { fehler: 'leere Notiz' });
+    }
+
+    const notizWeg = url.pathname.match(/^\/api\/kontakt\/[a-f0-9]{16}\/notiz\/([a-f0-9]{16})$/);
+    if (notizWeg && req.method === 'DELETE') {
+      const ok = notizLoeschen(kunde, notizWeg[1]);
+      return jsonAntwort(res, ok ? 200 : 404, ok ? { ok: true } : { fehler: 'unbekannte Notiz' });
     }
 
     return jsonAntwort(res, 404, { fehler: 'unbekannt' });

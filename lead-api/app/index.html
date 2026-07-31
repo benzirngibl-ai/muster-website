@@ -1,18 +1,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#16181d">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#201b15" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Anfragen">
 <link rel="manifest" href="./manifest.json">
 <link rel="apple-touch-icon" href="./icon-192.png">
+<link rel="icon" href="./icon-192.png" type="image/png">
 <link rel="stylesheet" href="./app.css">
 <title>Anfragen</title>
 
 <header class="kopf">
   <div class="kopf-zeile">
-    <h1 id="betrieb">Anfragen</h1>
-    <button id="aktualisieren" class="rund" title="Aktualisieren" aria-label="Aktualisieren">↻</button>
+    <button id="zurueck" class="rund" hidden aria-label="Zurück zur Übersicht"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></button>
+    <h1 id="titel">Anfragen</h1>
+    <button id="aktualisieren" class="rund" title="Aktualisieren" aria-label="Aktualisieren"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.73 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg></button>
   </div>
   <div id="hinweis" class="hinweis" hidden></div>
 </header>
@@ -34,11 +38,23 @@
   </details>
 </section>
 
-<main id="liste" class="liste"></main>
+<!-- Übersicht: alle Anfragen ------------------------------------------------ -->
+<div id="ansicht-liste">
+  <nav id="filter" class="filter" aria-label="Anfragen filtern">
+    <button class="chip" data-filter="offen" aria-pressed="true">Offen</button>
+    <button class="chip" data-filter="auftrag" aria-pressed="false">Aufträge</button>
+    <button class="chip" data-filter="alle" aria-pressed="false">Alle</button>
+  </nav>
 
-<div id="leer" class="leer" hidden>
-  <p>Noch keine Anfragen.</p>
-  <p class="klein">Sobald sich jemand über Ihre Website meldet, erscheint die Anfrage hier — und Ihr Handy meldet sich.</p>
+  <main id="liste" class="liste"></main>
+
+  <div id="leer" class="leer" hidden>
+    <p id="leer-text">Noch keine Anfragen.</p>
+    <p class="klein">Sobald sich jemand über Ihre Website meldet, erscheint die Anfrage hier — und Ihr Handy meldet sich.</p>
+  </div>
 </div>
+
+<!-- Kontakt: ein Kunde mit Anfragen, Stand, Notizen, Verlauf ---------------- -->
+<main id="ansicht-kontakt" class="kontakt" hidden></main>
 
 <script src="./app.js"></script>

@@ -8,11 +8,18 @@
 // neue Anfrage". Name und Anliegen holt die App erst beim Öffnen vom Server.
 // Damit sehen Apple und Google nie, worum es geht.
 
-const CACHE = 'anfragen-v1';
+const CACHE = 'anfragen-v2';
 const HUELLE = ['./', './app.css', './app.js', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(HUELLE)).then(() => self.skipWaiting()));
+  // Bewusst mit `reload`: sonst legt der neue Service Worker die alte, noch im
+  // Browser-Zwischenspeicher liegende Fassung ab — und die App bleibt stehen.
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => Promise.all(HUELLE.map((u) =>
+        fetch(u, { cache: 'reload' }).then((r) => (r.ok ? c.put(u, r) : null)))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener('activate', (e) => {

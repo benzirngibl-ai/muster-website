@@ -16,7 +16,41 @@ hängt an einem Schalter (`src/config.ts` → `indexable`).
 - Astro 5, statisch, `build.format: directory` — Deploy als Dockerfile-Build (node → nginx)
 - Fonts selbst gehostet (@fontsource: Lexend + Source Sans 3), kein CDN, kein Tracking
 - `lead-api/server.mjs`: dependency-freier Node-Dienst — Formular-POST →
-  JSONL-Log (`/data/leads.jsonl`) + Discord-Webhook-Ping (mit @Mention) + Resend-Mail
+  JSONL-Log (`/data/leads.jsonl`) + Push in die Anfragen-App + Discord-Webhook-Ping
+  (mit @Mention) + Resend-Mail
+
+## Anfragen-App / Kunden-Cockpit (`lead-api/app/`)
+
+Installierbare Web-App unter `/app/`, eine je Kunde. Zugang über einen persönlichen
+Link mit Token — kein Passwort, kein Fremdkonto. Sie ist der Empfänger für das
+Versprechen „jede Anfrage landet in Sekunden auf Ihrem Handy" und zugleich das
+CRM des 297-€-Produkts (das k-AIzen OS ist per Architekturentscheidung
+Single-Tenant und dafür nicht gedacht).
+
+- **Push ohne Inhalte:** die Benachrichtigung transportiert nur „neue Anfrage" + ID.
+  Name und Anliegen holt die App danach über einen authentifizierten Aufruf. Apple
+  und Google sehen nie, worum es geht.
+- **Stufen** je Anfrage: Neu → Angerufen → Besichtigt → Angebot raus → Auftrag,
+  daneben „Nichts draus geworden". `abgeschlossen` ist Altbestand aus der Zeit des
+  bloßen Erledigt-Hakens und wird nicht umgedeutet.
+- **Notizen** hängen am *Kontakt*, nicht an der einzelnen Anfrage — zusammengeführt
+  über die Telefonnummer (0170…, +49170… und 0049170… sind derselbe Kontakt).
+  Deshalb steht beim zweiten Auftrag noch da, was beim ersten besprochen wurde.
+- **Verlauf** je Kontakt aus Anfragen, Stufenwechseln und Notizen (`/data/verlauf.jsonl`,
+  nur angehängt).
+- **Mandantentrennung** ist überall dieselbe Prüfung: fremde Anfragen und Kontakte
+  sind nicht sichtbar und nicht änderbar, auch mit geratener ID.
+
+Kunden anlegen (auf dem Server, weil die Daten dort liegen):
+
+```bash
+node kunden.mjs --neu <kennung> "<Name>"   # gibt den Zugangslink aus
+node kunden.mjs --liste                    # Geräte + Anfragen je Kunde
+```
+
+⚠️ **iPhone:** Push geht nur, wenn die App vorher über Safari zum Startbildschirm
+hinzugefügt wurde. Die App erkennt das und zeigt die Anleitung — beim Onboarding
+gemeinsam am Telefon durchgehen, dann sind es zwei Minuten.
 
 ## SEO/GEO-Stack (ab Werk, gesteuert über `src/config.ts`)
 
@@ -59,6 +93,16 @@ npm install
 npm run dev          # Site auf :4321
 node lead-api/server.mjs   # API auf :8080 (Envs siehe server.mjs-Kopf)
 # Build gegen lokale API: PUBLIC_LEAD_API=http://localhost:8080 npm run build
+```
+
+Anfragen-App prüfen und ansehen (beides ohne Server-Zugriff, gegen ein Verzeichnis
+unter `/tmp` — nie gegen `/data`):
+
+```bash
+cd lead-api
+node pruefung-cockpit.mjs                                   # Datenschicht + Schnittstelle
+DATA_DIR=/tmp/cockpit-demo PORT=8390 node demo-daten.mjs    # Demodaten, gibt den Link aus
+DATA_DIR=/tmp/cockpit-demo PORT=8390 node server.mjs        # Vorschau auf :8390/app/
 ```
 
 ## Deploy

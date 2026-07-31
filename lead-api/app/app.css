@@ -1,56 +1,127 @@
-/* Anfragen-App — Gerüst-Stil: für einen Daumen auf einem Handy, bei Sonne, mit Arbeitshandschuh.
-   Große Antippflächen, hoher Kontrast, keine Verzierung. Feinschliff später. */
+/* Anfragen-App — Kunden-Cockpit eines Handwerksbetriebs.
+
+   THESIS: Ein Arbeitszettel, kein App-Dashboard. Die Seite verweigert bunte
+   Status-Plaketten und Kartenraster; Stand lebt in Position und Gewicht.
+   OWN-WORLD: Warmes Papiergrau auf Weiß, warme Tinte (#221d17), eine Farbe:
+   das Haus-Orange — nur für "Neu", die Haupthandlung und den Ist-Stand.
+   Systemschrift, kräftige Gewichte, große Antippflächen, Leiter-Stufenwahl.
+   STORY: Aufblicken, Neues erkennen, anrufen, Stand mit einem Tipp setzen.
+   FIRST VIEWPORT: Betriebsname oben, Filterleiste, dann die neueste Anfrage
+   mit Name, Stand, Anliegen und großem Anrufen-Knopf.
+   FORM: Operate, briefgebunden (Nutzungsszene: Sonne, Daumen, Handschuh) —
+   eng spezifizierter Auftrag, kein Richtungs-Los.
+   FINISH: unreviewed and undocumented is unfinished; this build ends with
+   the finish review, the verdict, and DESIGN.md */
 
 :root {
-  --ink: #16181d;
-  --dim: #5c6470;
-  --zart: #8b93a0;
-  --linie: #e0e4ea;
-  --flaeche: #fff;
-  --grund: #f4f6f8;
+  color-scheme: light;
+  --ink: #221d17;
+  --dim: #5a534b;
+  --zart: #6e675e;
+  --linie: #e5dfd6;
+  --linie-stark: #cfc7bb;
+  --flaeche: #ffffff;
+  --grund: #f2efe9;
+  --aussen: #e9e4db;
   --akzent: #c2410c;
-  --gut: #1a7f4b;
-  --warn: #b07800;
-  --warnbg: #fdf5e6;
-  --gutbg: #e9f5ee;
+  --akzent-tief: #9f3608;
+  --auf-akzent: #ffffff;
+  --akzent-flaeche: #faece3;
+  --akzent-linie: #eed3c2;
+  --akzent-text: #8c3a12;
+  --gut: #146c43;
+  --gut-flaeche: #e3f1e7;
+  --gut-text: #115c39;
+  --warn-flaeche: #f7ecd7;
+  --warn-text: #7a5410;
+  --schatten: 0 1px 2px rgba(43, 33, 24, .06), 0 2px 8px rgba(43, 33, 24, .07);
 }
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --ink: #f2ece3;
+    --dim: #beb4a7;
+    --zart: #a89d8f;
+    --linie: #352e25;
+    --linie-stark: #4a4136;
+    --flaeche: #201b15;
+    --grund: #15110d;
+    --aussen: #0e0b08;
+    --akzent: #f0703a;
+    --akzent-tief: #f68c5e;
+    --auf-akzent: #2a1206;
+    --akzent-flaeche: #33200f;
+    --akzent-linie: #4a2c17;
+    --akzent-text: #f4a077;
+    --gut: #55c084;
+    --gut-flaeche: #14291d;
+    --gut-text: #7fd3a4;
+    --warn-flaeche: #2e2410;
+    --warn-text: #e3b45e;
+    --schatten: 0 1px 2px rgba(0, 0, 0, .3), 0 2px 8px rgba(0, 0, 0, .25);
+  }
+}
+
+/* ---------- Grund ---------- */
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+[hidden] { display: none !important; }
+
+html { background: var(--grund); }
+
 body {
-  margin: 0;
-  padding: 0 0 env(safe-area-inset-bottom);
+  margin: 0 auto;
+  padding: 0 0 calc(28px + env(safe-area-inset-bottom));
+  min-height: 100dvh;
   background: var(--grund);
   color: var(--ink);
-  font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+button { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+
+:focus-visible { outline: 3px solid var(--akzent); outline-offset: 2px; }
+
+.visuell-versteckt {
+  position: absolute; width: 1px; height: 1px; margin: -1px;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
 }
 
 /* ---------- Kopf ---------- */
 
 .kopf {
   position: sticky; top: 0; z-index: 10;
-  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
   background: var(--flaeche);
   border-bottom: 1px solid var(--linie);
 }
-.kopf-zeile { display: flex; align-items: center; gap: 12px; }
-.kopf h1 { margin: 0; font-size: 19px; letter-spacing: -.02em; flex: 1; }
+.kopf-zeile { display: flex; align-items: center; gap: 10px; }
+.kopf h1 {
+  margin: 0; flex: 1; min-width: 0;
+  font-size: 19px; font-weight: 700; letter-spacing: -.015em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 
 .rund {
-  width: 42px; height: 42px; flex: none;
-  border: 1px solid var(--linie); border-radius: 50%;
+  width: 44px; height: 44px; flex: none;
+  display: grid; place-items: center;
+  border: 1px solid var(--linie-stark); border-radius: 50%;
   background: var(--flaeche); color: var(--dim);
-  font-size: 20px; line-height: 1; cursor: pointer;
+  cursor: pointer; padding: 0;
 }
-.rund:active { background: var(--grund); }
+.rund svg { width: 22px; height: 22px; fill: currentColor; }
+.rund:active { background: var(--grund); color: var(--ink); }
 
 .hinweis {
-  margin-top: 10px; padding: 10px 13px;
-  border-radius: 8px; font-size: 14px;
+  margin-top: 10px; padding: 11px 14px;
+  border-radius: 10px; font-size: 14.5px; line-height: 1.45;
   background: var(--grund); color: var(--dim);
 }
-.hinweis--warn { background: var(--warnbg); color: var(--warn); }
-.hinweis--gut { background: var(--gutbg); color: var(--gut); }
+.hinweis--warn { background: var(--warn-flaeche); color: var(--warn-text); }
+.hinweis--gut { background: var(--gut-flaeche); color: var(--gut-text); }
 
 /* ---------- Karten ---------- */
 
@@ -60,68 +131,292 @@ body {
   background: var(--flaeche);
   border: 1px solid var(--linie);
   border-radius: 12px;
+  box-shadow: var(--schatten);
 }
 
-.einrichten { border-left: 4px solid var(--akzent); }
-.einrichten h2 { margin: 0 0 6px; font-size: 16px; }
-.einrichten p { margin: 0 0 13px; color: var(--dim); font-size: 14.5px; }
-.einrichten details { margin-top: 13px; font-size: 14.5px; }
-.einrichten summary { cursor: pointer; color: var(--akzent); font-weight: 600; padding: 4px 0; }
-.einrichten ol { margin: 10px 0 0; padding-left: 22px; color: var(--dim); }
-.einrichten li { margin-bottom: 7px; }
+/* ---------- Einrichtung ---------- */
 
-/* ---------- Anfrage ---------- */
+.einrichten {
+  background: var(--akzent-flaeche);
+  border-color: var(--akzent-linie);
+}
+.einrichten h2 { margin: 0 0 6px; font-size: 16.5px; letter-spacing: -.01em; }
+.einrichten p { margin: 0 0 14px; color: var(--akzent-text); font-size: 14.5px; }
+.einrichten details { margin-top: 14px; font-size: 14.5px; color: var(--akzent-text); }
+.einrichten summary { cursor: pointer; font-weight: 700; padding: 6px 0; min-height: 32px; }
+.einrichten ol { margin: 10px 0 0; padding-left: 22px; }
+.einrichten li { margin-bottom: 8px; }
+.einrichten .knopf { width: 100%; background: var(--akzent); border-color: var(--akzent); color: var(--auf-akzent); }
 
-.anfrage { border-left: 4px solid var(--akzent); }
-.anfrage.erledigt { border-left-color: var(--linie); opacity: .58; }
+/* ---------- Filter ---------- */
+
+.filter {
+  display: flex; margin: 14px 16px 0;
+  background: var(--flaeche);
+  border: 1px solid var(--linie-stark);
+  border-radius: 11px;
+  overflow: hidden;
+}
+.chip {
+  flex: 1; min-height: 46px;
+  border: 0; background: none; padding: 0 8px;
+  font: inherit; font-size: 15px; font-weight: 600;
+  color: var(--dim); cursor: pointer;
+}
+.chip + .chip { border-left: 1px solid var(--linie); }
+.chip[aria-pressed="true"] {
+  background: var(--ink); color: var(--grund); font-weight: 700;
+}
+.chip:focus-visible { outline-offset: -3px; }
+
+/* ---------- Anfrage in der Übersicht ---------- */
+
+.liste { padding-bottom: 4px; }
+
+.anfrage { cursor: pointer; }
 
 .zeile1 { display: flex; align-items: baseline; gap: 10px; }
-.name { font-size: 17px; flex: 1; }
-.zeit { color: var(--zart); font-size: 13px; white-space: nowrap; }
-.ort { color: var(--dim); font-size: 14px; margin-top: 2px; }
-.text { margin: 10px 0 0; font-size: 15.5px; }
-.rueckruf {
-  margin-top: 9px; padding: 7px 11px;
-  background: var(--grund); border-radius: 7px;
-  font-size: 14px; color: var(--dim);
+.name { margin: 0; flex: 1; min-width: 0; font-size: 17.5px; font-weight: 700; letter-spacing: -.01em; }
+.name a { color: inherit; text-decoration: none; }
+.zeit { color: var(--zart); font-size: 13.5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.merkmale {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px;
+  margin-top: 5px; font-size: 14.5px;
 }
-.tel { margin-top: 9px; color: var(--zart); font-size: 13.5px; }
+.merkmale > :not(:first-child)::before {
+  content: "· "; color: var(--zart); font-weight: 400;
+}
+.ort { color: var(--dim); }
+.wieder { color: var(--dim); font-weight: 600; }
+.notiz-zahl { color: var(--zart); }
+
+/* Der Stand: ein Wort an fester Stelle. Nur „Neu" darf leuchten. */
+.stufe-chip { font-weight: 700; color: var(--ink); }
+.stufe-chip[data-stufe="neu"] {
+  background: var(--akzent); color: var(--auf-akzent);
+  font-size: 13px; letter-spacing: .02em;
+  padding: 3px 10px 4px; border-radius: 999px;
+}
+.stufe-chip[data-stufe="auftrag"] { color: var(--gut); }
+.stufe-chip[data-stufe="auftrag"]::after { content: " ✓"; }
+.stufe-chip[data-stufe="abgesagt"],
+.stufe-chip[data-stufe="abgeschlossen"] { color: var(--zart); font-weight: 600; }
+
+.text { margin: 10px 0 0; font-size: 16px; line-height: 1.5; overflow-wrap: anywhere; }
+.anfrage .text {
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rueckruf {
+  display: flex; align-items: flex-start; gap: 8px;
+  margin-top: 12px; padding: 10px 12px;
+  background: var(--akzent-flaeche); border-radius: 9px;
+  font-size: 14.5px; color: var(--akzent-text);
+}
+.rueckruf svg { width: 18px; height: 18px; flex: none; fill: currentColor; margin-top: 1px; }
+.rueckruf strong { font-weight: 700; }
+
+/* Vorbei: abgesagte und alt-erledigte Anfragen liegen flach auf dem Grund */
+.anfrage[data-stufe="abgesagt"],
+.anfrage[data-stufe="abgeschlossen"] {
+  background: transparent; box-shadow: none;
+}
+.anfrage[data-stufe="abgesagt"] .name,
+.anfrage[data-stufe="abgeschlossen"] .name { color: var(--dim); }
+.anfrage[data-stufe="abgesagt"] .text,
+.anfrage[data-stufe="abgeschlossen"] .text { color: var(--zart); }
+.anfrage[data-stufe="abgesagt"] .knopf--stark,
+.anfrage[data-stufe="abgeschlossen"] .knopf--stark {
+  background: var(--flaeche); border-color: var(--linie-stark); color: var(--ink);
+}
+.anfrage[data-stufe="abgesagt"] .rueckruf,
+.anfrage[data-stufe="abgeschlossen"] .rueckruf { background: var(--grund); color: var(--dim); }
 
 /* ---------- Knöpfe ---------- */
 
-.aktionen { display: flex; gap: 9px; flex-wrap: wrap; margin-top: 14px; }
+.aktionen { display: flex; gap: 10px; margin-top: 14px; }
 
 .knopf {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 46px; padding: 0 18px;
-  border: 1px solid var(--linie); border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 50px; padding: 0 18px;
+  border: 1px solid var(--linie-stark); border-radius: 11px;
   background: var(--flaeche); color: var(--ink);
-  font: inherit; font-size: 15px; font-weight: 600;
+  font: inherit; font-size: 16px; font-weight: 700;
   text-decoration: none; cursor: pointer;
 }
-.knopf:active { transform: scale(.97); }
-.knopf--stark { background: var(--akzent); border-color: var(--akzent); color: #fff; }
-.knopf--leise { color: var(--dim); font-weight: 500; margin-left: auto; }
+.knopf svg { width: 19px; height: 19px; fill: currentColor; flex: none; }
+.knopf:active { transform: scale(.98); }
+.knopf--stark { background: var(--akzent); border-color: var(--akzent); color: var(--auf-akzent); }
+.knopf--stark:active { background: var(--akzent-tief); border-color: var(--akzent-tief); }
+.knopf:disabled { opacity: .5; cursor: default; transform: none; }
 
-.einrichten .knopf { width: 100%; background: var(--akzent); border-color: var(--akzent); color: #fff; }
-.einrichten .knopf:disabled { opacity: .6; }
+.aktionen .knopf--stark { flex: 1.7; }
+.aktionen .knopf:not(.knopf--stark) { flex: 1; }
 
 /* ---------- Leerzustand ---------- */
 
-.leer { padding: 44px 32px; text-align: center; color: var(--dim); }
+.leer { padding: 56px 32px; text-align: center; color: var(--dim); }
 .leer p { margin: 0 0 8px; }
-.leer .klein { font-size: 14px; color: var(--zart); }
+.klein { font-size: 14px; color: var(--zart); }
 
-/* ---------- Dunkel ---------- */
+/* ---------- Kontakt: Kopf ---------- */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #e8ebf1; --dim: #9aa3b2; --zart: #79828f; --linie: #2d333d;
-    --flaeche: #1a1d23; --grund: #101318; --akzent: #f0703a;
-    --gut: #4ec27f; --warn: #e0a83c; --warnbg: #2a2213; --gutbg: #122c1e;
-  }
+.kontakt-kopf {
+  background: var(--flaeche);
+  padding: 14px 16px 16px;
+  border-bottom: 1px solid var(--linie);
 }
+.kopfzeile { margin: 0 0 2px; color: var(--dim); font-size: 15px; }
+.kontakt-kopf .tel {
+  margin: 2px 0 0; font-size: 17px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.kontakt-kopf .mail { margin: 2px 0 0; color: var(--dim); font-size: 14.5px; overflow-wrap: anywhere; }
+.kontakt-kopf .aktionen { margin-top: 14px; }
+
+/* ---------- Kontakt: Blöcke ---------- */
+
+.block { margin: 26px 16px 0; }
+.block:last-child { margin-bottom: 44px; }
+.block h2 {
+  margin: 0 0 10px; padding: 0 2px;
+  font-size: 13.5px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .07em;
+  color: var(--zart);
+}
+.block .karte { margin: 0 0 12px; }
+
+.anfrage-detail h3 { margin: 0; flex: 1; min-width: 0; font-size: 15.5px; font-weight: 700; }
+
+/* ---------- Stufenwahl: die Leiter ---------- */
+
+.stufen {
+  display: flex; flex-direction: column;
+  margin-top: 14px; padding-top: 6px;
+  border-top: 1px solid var(--linie);
+}
+
+.stufe, .absage {
+  position: relative;
+  display: flex; align-items: center; gap: 12px;
+  min-height: 48px; width: 100%; padding: 0 4px;
+  border: 0; background: none; border-radius: 9px;
+  font: inherit; font-size: 16px; font-weight: 500; text-align: left;
+  color: var(--zart); cursor: pointer;
+}
+
+/* Die Sprossen: Verbindungslinie zwischen den Punkten */
+.stufe::before, .stufe::after {
+  content: ""; position: absolute; left: 17px; width: 2px;
+  background: var(--linie-stark);
+}
+.stufe::before { top: 0; height: calc(50% - 14px); }
+.stufe::after { bottom: 0; height: calc(50% - 14px); }
+.stufe:first-child::before, .stufe:last-child::after { display: none; }
+.stufe--erreicht::before { background: var(--dim); }
+.stufe:has(+ .stufe--erreicht)::after { background: var(--dim); }
+
+.stufe-punkt {
+  flex: none; width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid var(--linie-stark); background: var(--flaeche);
+  display: grid; place-items: center; color: transparent;
+  position: relative; z-index: 1;
+}
+.stufe-punkt svg { width: 16px; height: 16px; fill: currentColor; }
+
+.stufe--erreicht { color: var(--dim); font-weight: 600; }
+.stufe--erreicht .stufe-punkt { background: var(--dim); border-color: var(--dim); color: var(--flaeche); }
+
+.stufe[aria-pressed="true"] { color: var(--ink); font-weight: 700; }
+.stufe[aria-pressed="true"] .stufe-punkt {
+  background: var(--akzent); border-color: var(--akzent); color: var(--auf-akzent);
+  animation: stempel .32s cubic-bezier(.22, .61, .36, 1);
+}
+
+.stufe:active .stufe-punkt, .absage:active .stufe-punkt { transform: scale(.88); }
+
+@keyframes stempel {
+  from { transform: scale(.4); }
+  62%  { transform: scale(1.16); }
+  to   { transform: scale(1); }
+}
+
+/* „Nichts draus geworden" — Ausstieg, keine sechste Sprosse */
+.absage { margin-top: 8px; border-top: 1px solid var(--linie); border-radius: 0 0 9px 9px; font-size: 15px; }
+.absage[aria-pressed="true"] { color: var(--ink); font-weight: 700; }
+.absage[aria-pressed="true"] .stufe-punkt { background: var(--ink); border-color: var(--ink); color: var(--flaeche); }
+
+.stufen--aus { opacity: .45; }
+
+.alt-hinweis { margin: 10px 4px 0; font-size: 14px; color: var(--dim); }
+
+/* ---------- Notizen ---------- */
+
+.notiz-form { padding: 12px; }
+.notiz-form textarea {
+  display: block; width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--linie-stark); border-radius: 9px;
+  background: var(--grund); color: var(--ink);
+  font: inherit; font-size: 16px; line-height: 1.5;
+  resize: vertical;
+}
+.notiz-form textarea::placeholder { color: var(--zart); opacity: 1; }
+.notiz-form textarea:focus { outline: none; border-color: var(--akzent); background: var(--flaeche); }
+.notiz-form .knopf { width: 100%; margin-top: 10px; }
+
+.notiz-liste { list-style: none; margin: 0; padding: 0; }
+.notiz .text { margin: 0; }
+.notiz-fuss { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+
+.notiz-weg {
+  border: 0; background: none; padding: 6px 8px; margin: -6px -8px;
+  font: inherit; font-size: 14px; font-weight: 600;
+  color: var(--zart); cursor: pointer; border-radius: 7px;
+}
+.notiz-weg:active { color: var(--ink); }
+
+.notizen .leer { padding: 2px 4px 0; text-align: left; font-size: 14.5px; }
+
+/* ---------- Verlauf ---------- */
+
+.verlauf-liste { list-style: none; margin: 0; padding: 2px 0 0 6px; position: relative; }
+.verlauf-liste::before {
+  content: ""; position: absolute; left: 10px; top: 8px; bottom: 8px;
+  width: 1px; background: var(--linie-stark);
+}
+.verlauf-liste li { position: relative; padding: 0 2px 18px 26px; }
+.verlauf-liste li:last-child { padding-bottom: 4px; }
+.verlauf-liste li::before {
+  content: ""; position: absolute; left: 5px; top: 5px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--flaeche); border: 2px solid var(--zart);
+}
+.verlauf-liste .v-anfrage::before { background: var(--akzent); border-color: var(--akzent); }
+.verlauf-liste .v-stufe::before { background: var(--zart); }
+
+.v-zeit {
+  display: block; margin-bottom: 1px;
+  font-size: 12.5px; color: var(--zart); font-variant-numeric: tabular-nums;
+}
+.v-text { display: block; font-size: 15px; line-height: 1.45; overflow-wrap: anywhere; }
+.v-stufe strong { font-weight: 700; }
+.verlauf-liste .notiz-weg { margin: 2px -8px -6px; font-size: 13.5px; }
+
+/* ---------- Laptop am Küchentisch ---------- */
+
+@media (min-width: 720px) {
+  html { background: var(--aussen); }
+  body { max-width: 720px; border-inline: 1px solid var(--linie); }
+  .karte { padding: 17px 20px; }
+}
+
+/* ---------- Ruhe ---------- */
 
 @media (prefers-reduced-motion: reduce) {
   .knopf:active { transform: none; }
+  .stufe:active .stufe-punkt, .absage:active .stufe-punkt { transform: none; }
+  .stufe[aria-pressed="true"] .stufe-punkt { animation: none; }
 }

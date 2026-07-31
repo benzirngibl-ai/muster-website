@@ -1,4 +1,4 @@
-// Datenhaltung für Kunden, Push-Abos und Anfragen.
+// Datenhaltung für Kunden, Push-Abos, Anfragen und das Kunden-Cockpit.
 //
 // Bewusst dateibasiert wie der Rest der Lead-API: JSON und JSONL auf dem
 // Coolify-Volume. Bei einer Handvoll Kunden mit ein paar Anfragen am Tag ist
@@ -8,17 +8,19 @@
 // Ablage unter /data:
 //   kunden.json   { [id]: {name, token, aktiv, angelegt} }
 //   abos.jsonl    ein Datensatz je Anmeldung eines Geräts
-//   leads.jsonl   Anfragen (bestehend, jetzt mit Feld `kunde`)
-//   status.json   { [leadId]: {erledigt, ts} }
+//   leads.jsonl   Anfragen (bestehend, mit Feld `kunde`)
+//   status.json   { [leadId]: {stufe, ts} } — Altbestand steht als {erledigt:true} drin
+//   verlauf.jsonl Stufenwechsel und Notizen, nur angehängt — das ist die Kundenhistorie
 
-import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync } from 'node:fs';
-import { randomBytes, timingSafeEqual } from 'node:crypto';
+import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, renameSync } from 'node:fs';
+import { randomBytes, timingSafeEqual, createHash } from 'node:crypto';
 
 const DATA = process.env.DATA_DIR || '/data';
 const F_KUNDEN = `${DATA}/kunden.json`;
 const F_ABOS = `${DATA}/abos.jsonl`;
 const F_LEADS = `${DATA}/leads.jsonl`;
 const F_STATUS = `${DATA}/status.json`;
+const F_VERLAUF = `${DATA}/verlauf.jsonl`;
 
 try { mkdirSync(DATA, { recursive: true }); } catch {}
 
@@ -28,9 +30,17 @@ function jsonLesen(pfad, standard) {
   try { return existsSync(pfad) ? JSON.parse(readFileSync(pfad, 'utf8')) : standard; }
   catch (e) { console.error(`LESEFEHLER ${pfad}`, e.message); return standard; }
 }
+// Erst daneben schreiben, dann umbenennen: Umbenennen ist atomar, ein Absturz
+// mittendrin lässt die alte Datei stehen statt eine halbe zu hinterlassen.
+// In status.json steht seit dem Cockpit der Arbeitsstand des Kunden — der ist
+// nicht wiederherstellbar, wenn die Datei zerreißt.
 function jsonSchreiben(pfad, wert) {
-  try { writeFileSync(pfad, JSON.stringify(wert, null, 2)); return true; }
-  catch (e) { console.error(`SCHREIBFEHLER ${pfad}`, e.message); return false; }
+  const temp = `${pfad}.neu`;
+  try {
+    writeFileSync(temp, JSON.stringify(wert, null, 2));
+    renameSync(temp, pfad);
+    return true;
+  } catch (e) { console.error(`SCHREIBFEHLER ${pfad}`, e.message); return false; }
 }
 function jsonlLesen(pfad) {
   if (!existsSync(pfad)) return [];
@@ -38,6 +48,10 @@ function jsonlLesen(pfad) {
     return readFileSync(pfad, 'utf8').split('\n').filter(Boolean)
       .map((z) => { try { return JSON.parse(z); } catch { return null; } }).filter(Boolean);
   } catch (e) { console.error(`LESEFEHLER ${pfad}`, e.message); return []; }
+}
+function jsonlAnhaengen(pfad, satz) {
+  try { appendFileSync(pfad, JSON.stringify(satz) + '\n'); return true; }
+  catch (e) { console.error(`SCHREIBFEHLER ${pfad}`, e.message); return false; }
 }
 
 // ── Kunden ───────────────────────────────────────────────────────────────────
@@ -77,17 +91,18 @@ export function kundeAusToken(token) {
 
 /** Meldet ein Gerät an. Mehrfachanmeldung desselben Endpunkts ist gutartig — der letzte gewinnt. */
 export function aboSpeichern(kunde, abo, geraet = '') {
-  appendFileSync(F_ABOS, JSON.stringify({
+  jsonlAnhaengen(F_ABOS, {
     kunde, endpoint: abo.endpoint, keys: abo.keys,
     geraet: String(geraet).slice(0, 120), ts: new Date().toISOString(),
-  }) + '\n');
+  });
 }
 
 /** Alle aktiven Abos eines Kunden — je Endpunkt nur der neueste Datensatz, entfernte gefiltert. */
 export function abosVonKunde(kunde) {
-  const entfernt = new Set(jsonlLesen(F_ABOS).filter((a) => a.entfernt).map((a) => a.endpoint));
+  const alle = jsonlLesen(F_ABOS);
+  const entfernt = new Set(alle.filter((a) => a.entfernt).map((a) => a.endpoint));
   const neueste = new Map();
-  for (const a of jsonlLesen(F_ABOS)) {
+  for (const a of alle) {
     if (a.kunde !== kunde || a.entfernt || entfernt.has(a.endpoint)) continue;
     neueste.set(a.endpoint, a);
   }
@@ -95,36 +110,183 @@ export function abosVonKunde(kunde) {
 }
 
 export function aboEntfernen(endpoint) {
-  appendFileSync(F_ABOS, JSON.stringify({ endpoint, entfernt: true, ts: new Date().toISOString() }) + '\n');
+  jsonlAnhaengen(F_ABOS, { endpoint, entfernt: true, ts: new Date().toISOString() });
+}
+
+// ── Stufen: der Weg von der Anfrage zum Auftrag ──────────────────────────────
+//
+// Die Kette bildet ab, was im Betrieb wirklich passiert. `abgesagt` steht
+// bewusst NEBEN der Kette, nicht dahinter — es kann an jeder Stelle eintreten.
+// `abgeschlossen` ist Altbestand aus der Zeit, als es nur einen Erledigt-Haken
+// gab; es wird nie neu vergeben, aber auch nie stillschweigend umgedeutet.
+
+export const STUFEN = [
+  { id: 'neu', label: 'Neu', kurz: 'Neu' },
+  { id: 'kontaktiert', label: 'Angerufen', kurz: 'Angerufen' },
+  { id: 'besichtigt', label: 'Besichtigt', kurz: 'Besichtigt' },
+  { id: 'angebot', label: 'Angebot raus', kurz: 'Angebot' },
+  { id: 'auftrag', label: 'Auftrag', kurz: 'Auftrag' },
+];
+
+export const STUFEN_ENDE = [
+  { id: 'abgesagt', label: 'Nichts draus geworden', kurz: 'Abgesagt' },
+  { id: 'abgeschlossen', label: 'Abgeschlossen', kurz: 'Erledigt' },
+];
+
+const STUFEN_ALLE = [...STUFEN, ...STUFEN_ENDE];
+const GUELTIG = new Set(STUFEN_ALLE.map((s) => s.id));
+const ENDSTUFEN = new Set(['auftrag', 'abgesagt', 'abgeschlossen']);
+
+export function stufeGueltig(s) { return GUELTIG.has(s); }
+export function istEndstufe(s) { return ENDSTUFEN.has(s); }
+
+function stufeVon(eintrag) {
+  if (!eintrag) return 'neu';
+  if (eintrag.stufe && GUELTIG.has(eintrag.stufe)) return eintrag.stufe;
+  return eintrag.erledigt ? 'abgeschlossen' : 'neu';
+}
+
+// ── Kontakte: die Person hinter den Anfragen ─────────────────────────────────
+//
+// Zwei Anfragen derselben Person gehören zusammen, sonst steht die Notiz vom
+// letzten Auftrag an der falschen Stelle. Zusammengeführt wird über die
+// Telefonnummer — das Feld, das im Handwerk immer ausgefüllt ist.
+
+function schluessel(lead) {
+  // 0170…, 0049170… und +49170… sind dieselbe Nummer
+  const tel = String(lead.telefon || '').replace(/\D/g, '').replace(/^(?:0049|49)/, '').replace(/^0/, '');
+  if (tel.length >= 6) return `tel:${tel}`;
+  const mail = String(lead.email || '').trim().toLowerCase();
+  if (mail) return `mail:${mail}`;
+  return `person:${String(lead.name || '').trim().toLowerCase()}|${String(lead.ort || '').trim().toLowerCase()}`;
+}
+
+/** Stabile Kennung des Kontakts. Gehasht, weil sie in Adressen steht — dort hat kein Klarname etwas verloren. */
+export function kontaktId(lead) {
+  return createHash('sha256').update(schluessel(lead)).digest('hex').slice(0, 16);
+}
+
+// ── Verlauf: Stufenwechsel + Notizen ─────────────────────────────────────────
+
+function verlaufAnhaengen(satz) {
+  return jsonlAnhaengen(F_VERLAUF, { ...satz, ts: new Date().toISOString() });
+}
+
+/** Notizen eines Kunden (gelöschte gefiltert), wahlweise auf einen Kontakt eingegrenzt. */
+function notizenVonKunde(kunde, kontakt = null) {
+  const weg = new Set();
+  const notizen = [];
+  for (const e of jsonlLesen(F_VERLAUF)) {
+    if (e.typ === 'notiz-weg') { weg.add(e.id); continue; }
+    if (e.typ !== 'notiz' || e.kunde !== kunde) continue;
+    if (kontakt && e.kontakt !== kontakt) continue;
+    notizen.push(e);
+  }
+  return notizen.filter((n) => !weg.has(n.id));
+}
+
+export function notizAnlegen(kunde, kontakt, text) {
+  const sauber = String(text ?? '').trim().slice(0, 2000);
+  if (!sauber) return null;
+  const notiz = {
+    typ: 'notiz', id: randomBytes(8).toString('hex'),
+    kunde, kontakt, text: sauber, ts: new Date().toISOString(),
+  };
+  return jsonlAnhaengen(F_VERLAUF, notiz) ? notiz : null;
+}
+
+/** Löscht eine Notiz — aber nur die eigene. Fremde bleiben unberührt, auch bei geratener ID. */
+export function notizLoeschen(kunde, id) {
+  const treffer = jsonlLesen(F_VERLAUF).find((e) => e.typ === 'notiz' && e.id === id);
+  if (!treffer || treffer.kunde !== kunde) return false;
+  return verlaufAnhaengen({ typ: 'notiz-weg', id, kunde });
 }
 
 // ── Anfragen ─────────────────────────────────────────────────────────────────
 
 export function leadSpeichern(lead) {
   const mitId = { id: randomBytes(8).toString('hex'), ...lead };
-  appendFileSync(F_LEADS, JSON.stringify(mitId) + '\n');
+  jsonlAnhaengen(F_LEADS, mitId);
   return mitId;
 }
 
-/** Anfragen eines Kunden, neueste zuerst, mit Erledigt-Status angereichert. */
-export function leadsVonKunde(kunde, grenze = 100) {
+/** Anfragen eines Kunden, neueste zuerst — mit Stufe, Kontaktbezug und Notizzahl. */
+export function leadsVonKunde(kunde, grenze = 200) {
   const status = jsonLesen(F_STATUS, {});
-  return jsonlLesen(F_LEADS)
-    .filter((l) => (l.kunde || 'muster') === kunde)
-    .reverse()
-    .slice(0, grenze)
-    .map((l) => ({
+  const eigene = jsonlLesen(F_LEADS).filter((l) => (l.kunde || 'muster') === kunde);
+
+  const proKontakt = new Map();
+  for (const l of eigene) {
+    const k = kontaktId(l);
+    proKontakt.set(k, (proKontakt.get(k) || 0) + 1);
+  }
+  const notizzahl = new Map();
+  for (const n of notizenVonKunde(kunde)) notizzahl.set(n.kontakt, (notizzahl.get(n.kontakt) || 0) + 1);
+
+  // Nach Zeitstempel sortieren, nicht nach Dateireihenfolge: nachgetragene oder
+  // eingespielte Anfragen stehen sonst an der falschen Stelle. Bei gleicher
+  // Sekunde gewinnt der jüngere Eintrag, weil `reverse` stabil vorsortiert.
+  return eigene.reverse()
+    .sort((a, b) => (a.ts < b.ts ? 1 : a.ts > b.ts ? -1 : 0))
+    .slice(0, grenze).map((l) => {
+    const kontakt = kontaktId(l);
+    const stufe = stufeVon(status[l.id]);
+    return {
       id: l.id, ts: l.ts, name: l.name, telefon: l.telefon, ort: l.ort,
-      nachricht: l.nachricht, email: l.email,
-      rueckruf: l.rueckruf || '',
-      erledigt: !!status[l.id]?.erledigt,
-    }));
+      nachricht: l.nachricht, email: l.email, rueckruf: l.rueckruf || '',
+      kontakt, stufe,
+      offen: !istEndstufe(stufe),
+      erledigt: istEndstufe(stufe),          // ältere App-Fassungen lesen noch dieses Feld
+      anfragenDesKontakts: proKontakt.get(kontakt) || 1,
+      notizen: notizzahl.get(kontakt) || 0,
+    };
+  });
 }
 
-export function leadStatusSetzen(id, erledigt) {
-  const status = jsonLesen(F_STATUS, {});
-  status[id] = { erledigt: !!erledigt, ts: new Date().toISOString() };
-  return jsonSchreiben(F_STATUS, status);
+/** Setzt die Stufe einer Anfrage. Fremde Anfragen sind unerreichbar, auch mit geratener ID. */
+export function stufeSetzen(kunde, leadId, stufe) {
+  if (!stufeGueltig(stufe)) return { ok: false, fehler: 'unbekannte Stufe' };
+  const lead = jsonlLesen(F_LEADS).find((l) => l.id === leadId);
+  if (!lead || (lead.kunde || 'muster') !== kunde) return { ok: false, fehler: 'unbekannte Anfrage' };
+
+  const alle = jsonLesen(F_STATUS, {});
+  const vorher = stufeVon(alle[leadId]);
+  if (vorher === stufe) return { ok: true, stufe };
+
+  alle[leadId] = { stufe, ts: new Date().toISOString() };
+  if (!jsonSchreiben(F_STATUS, alle)) return { ok: false, fehler: 'konnte nicht gespeichert werden' };
+  verlaufAnhaengen({ typ: 'stufe', kunde, kontakt: kontaktId(lead), lead: leadId, von: vorher, nach: stufe });
+  return { ok: true, stufe };
+}
+
+/**
+ * Alles zu einem Kontakt: Stammdaten aus der neuesten Anfrage, seine Anfragen,
+ * und der zusammengeführte Verlauf aus Anfragen, Stufenwechseln und Notizen.
+ * Liefert null, wenn der Kontakt diesem Kunden nicht gehört — damit ist die
+ * Mandantentrennung dieselbe Prüfung wie „gibt es den überhaupt".
+ */
+export function kontaktDetail(kunde, id) {
+  const anfragen = leadsVonKunde(kunde, 1000).filter((a) => a.kontakt === id);
+  if (!anfragen.length) return null;
+
+  const neueste = anfragen[0];
+  const aelteste = anfragen[anfragen.length - 1];
+  const wechsel = jsonlLesen(F_VERLAUF)
+    .filter((e) => e.typ === 'stufe' && e.kunde === kunde && e.kontakt === id);
+
+  const verlauf = [
+    ...anfragen.map((a) => ({ typ: 'anfrage', ts: a.ts, lead: a.id, text: a.nachricht })),
+    ...wechsel.map((e) => ({ typ: 'stufe', ts: e.ts, von: e.von, nach: e.nach })),
+    ...notizenVonKunde(kunde, id).map((n) => ({ typ: 'notiz', ts: n.ts, id: n.id, text: n.text })),
+  ].sort((a, b) => (a.ts < b.ts ? 1 : -1));
+
+  return {
+    id,
+    name: neueste.name, telefon: neueste.telefon, ort: neueste.ort, email: neueste.email,
+    seit: aelteste.ts,
+    anfragen,
+    verlauf,
+  };
 }
 
 // ── Verwaltung über die Kommandozeile ────────────────────────────────────────
@@ -154,7 +316,10 @@ if (process.argv[1]?.endsWith('kunden.mjs')) {
     } else {
       for (const id of ids) {
         const k = alle[id];
-        console.log(`${id.padEnd(18)} ${k.name.padEnd(28)} ${abosVonKunde(id).length} Gerät(e)  ${k.aktiv ? '' : '(inaktiv)'}`);
+        const anfragen = leadsVonKunde(id, 1000);
+        const offen = anfragen.filter((a) => a.offen).length;
+        console.log(`${id.padEnd(18)} ${k.name.padEnd(28)} ${String(abosVonKunde(id).length).padStart(2)} Gerät(e)  ` +
+          `${String(anfragen.length).padStart(3)} Anfragen (${offen} offen)  ${k.aktiv ? '' : '(inaktiv)'}`);
       }
     }
   } else {
