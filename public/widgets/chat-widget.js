@@ -12,9 +12,9 @@
  *   window.MEISTER_CHAT = {
  *     botUrl:   'https://chat.<kunde>.de/chat',   // Pflicht: Backend-Endpoint
  *     name:     'Dachdeckerei Brandner & Sohn',   // Betriebsname (Titel)
- *     assistant:'Assistent',                       // Anzeigename des Bots (neutral)
+ *     assistant:'KI-Assistent',                    // Anzeigename — muss die Maschine erkennbar lassen
  *     accent:   '#c2410c',                         // optional; sonst --c-primary der Seite
- *     greeting: 'Hallo! Ich beantworte …',         // optional Begrüßung
+ *     greeting: 'Hallo! Hier antwortet …',         // optional Begrüßung
  *     suggestions: ['Was kostet …', 'Kommt ihr …'],// optional Schnell-Fragen
  *     address:  'Sie'                              // 'Sie' (default) | 'Du'
  *   };
@@ -27,16 +27,23 @@
   if (!BOT_URL) return; // ohne echtes Backend KEIN Widget (nie faken)
 
   const NAME = CFG.name || 'Chat';
-  const ASSISTANT = CFG.assistant || 'Assistent';
+  // Die Rückfallwerte sind das, was ein Kundenbetrieb bekommt, wenn beim Aufsetzen
+  // eine Angabe vergessen wird. Sie müssen deshalb für sich allein tragfähig sein:
+  //   · Die Maschine muss erkennbar bleiben (Art. 50 KI-VO, ab 02.08.2026).
+  //   · Nichts zusagen, was der Assistent nicht hält. Preise beantwortet er nicht —
+  //     der Betrieb schaut erst und schreibt dann ein Festpreis-Angebot. Ein
+  //     Rückfalltext, der nach Preisen fragt, startet den Besucher mit einer Absage.
+  const ASSISTANT = CFG.assistant || 'KI-Assistent';
   const SIE = (CFG.address || 'Sie').toLowerCase() !== 'du';
   const anrede = SIE ? 'Ihnen' : 'dir';
   const GREETING =
     CFG.greeting ||
-    `Hallo! Ich bin der Online-Assistent von ${NAME}. Ich beantworte ${anrede} Fragen zu Leistungen, Ablauf und Preisen — und nehme ${SIE ? 'Ihre' : 'deine'} Anfrage gleich auf.`;
+    `Hallo! Hier antwortet der KI-Assistent von ${NAME} — automatisch und rund um die Uhr. ` +
+    `Ich beantworte ${anrede} Fragen zu Leistungen, Einsatzgebiet und Ablauf und nehme ${SIE ? 'Ihre' : 'deine'} Anfrage gleich auf.`;
   const SUGGESTIONS =
     Array.isArray(CFG.suggestions) && CFG.suggestions.length
       ? CFG.suggestions.slice(0, 4)
-      : ['Was kostet das ungefähr?', 'Kommt ihr in meinen Ort?', 'Wie schnell habt ihr Zeit?'];
+      : ['Welche Leistungen bieten Sie an?', 'Kommen Sie in meinen Ort?', 'Wie läuft das mit dem Angebot ab?'];
 
   /** @type {Array<{role:'user'|'assistant', content:string}>} */
   const history = [];

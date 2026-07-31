@@ -35,12 +35,16 @@ const ort0 = BUSINESS.einsatzgebiet?.[0] ?? BUSINESS.ort;
 // ersten Knopf „Was kostet … ungefähr?" — genau die eine Frage, die er nicht
 // beantwortet, weil der Betrieb erst schaut und dann ein Festpreis-Angebot
 // schreibt. Der Besucher wäre mit einer Absage in den Chat gestartet.
+// KI-Kennzeichnung (Art. 50 KI-VO, ab 02.08.2026): Name und erster Satz sagen
+// klar, dass eine Maschine antwortet („KI-Assistent", „automatisch"), und die
+// Begrüßung nennt den menschlichen Draht (Telefon). Diese Datei ist die Vorlage
+// für jeden Kundenbetrieb — die Kennzeichnung darf beim Anpassen nicht raus.
 const chatConfig = JSON.stringify({
   botUrl: chatBotUrl,
   name: BUSINESS.name,
-  assistant: 'Online-Assistent',
+  assistant: 'KI-Assistent',
   address: 'Sie',
-  greeting: `Hallo! Ich bin der Online-Assistent von ${BUSINESS.name}. Fragen Sie mich zu Leistungen, Ablauf und Erreichbarkeit — oder schildern Sie kurz, worum es geht.`,
+  greeting: `Hallo! Hier antwortet der KI-Assistent von ${BUSINESS.name} — automatisch und rund um die Uhr. Fragen Sie mich zu Leistungen, Ablauf und Erreichbarkeit. Und wenn Sie lieber direkt mit uns sprechen: ${BUSINESS.telefonDisplay}.`,
   suggestions: [
     (BUSINESS.leistungen?.[0] ? `Machen Sie ${BUSINESS.leistungen[0].split(' ')[0].toLowerCase()}?` : 'Was machen Sie genau?'),
     `Kommen Sie nach ${ort0}?`,
