@@ -28,6 +28,27 @@ const RESEND_FROM = process.env.RESEND_FROM || 'Meisterseite Demo <kontakt@k-aiz
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK_URL || '';
 const MENTION_ID = process.env.DISCORD_MENTION_USER_ID || '99982972236607488';
 const SITE = 'https://muster.k-aizen.de';
+
+// Wohin der Besucher nach dem Absenden zurückgeleitet wird. Das Formular schickt
+// ein Feld `ziel`; gültig ist AUSSCHLIESSLICH, was hier eingetragen ist.
+//
+// Warum eine feste Liste und kein freies Feld (2026-08-21): Würde die URL direkt
+// aus dem Formular übernommen, könnte jeder Fremde einen Link bauen, der auf
+// unserem Server startet und irgendwo anders endet — eine offene Weiterleitung.
+// Die nutzen Phishing-Mails gern, weil der Anfang der Adresse vertrauenswürdig
+// aussieht. Unbekanntes `ziel` fällt still auf die Demo zurück.
+const ZIELE = {
+  muster: {
+    danke: `${SITE}/anfrage-erhalten/`,
+    fehler: `${SITE}/?fehler=felder#anfrage`,
+  },
+  kaizen: {
+    danke: 'https://k-aizen.de/danke/',
+    fehler: 'https://k-aizen.de/?fehler=felder#anfrage',
+  },
+};
+const zielVon = (p) => ZIELE[p.get('ziel') || 'muster'] || ZIELE.muster;
+
 const DATA_DIR = process.env.DATA_DIR || '/data';
 const LOG = `${DATA_DIR}/leads.jsonl`;
 
@@ -285,15 +306,16 @@ const server = http.createServer(async (req, res) => {
         ip,
       };
       const honeypot = (p.get('website') || '').trim(); // Bots füllen das versteckte Feld
+      const ziel = zielVon(p);
 
       // Bot / Rate-Limit / Pflichtfelder → freundlich behandeln, nichts verraten
       const invalid = !lead.name || !lead.telefon || !lead.ort || !lead.nachricht || !lead.einwilligung;
       if (honeypot || limited(ip)) {
-        res.writeHead(303, { Location: `${SITE}/anfrage-erhalten/` });
+        res.writeHead(303, { Location: ziel.danke });
         return res.end();
       }
       if (invalid) {
-        res.writeHead(303, { Location: `${SITE}/?fehler=felder#anfrage` });
+        res.writeHead(303, { Location: ziel.fehler });
         return res.end();
       }
 
@@ -316,7 +338,7 @@ const server = http.createServer(async (req, res) => {
       console.log(`LEAD ${lead.ts} kunde=${lead.kunde} ${lead.ort} ${lead.name} ` +
         `app=${app.zugestellt ?? 0}/${app.geraete} discord=${ping.ok} mail=${mail.ok}`);
 
-      res.writeHead(303, { Location: `${SITE}/anfrage-erhalten/` });
+      res.writeHead(303, { Location: ziel.danke });
       return res.end();
     });
     return;
