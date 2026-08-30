@@ -84,7 +84,7 @@ async function pingDiscord(lead) {
         fields: [
           { name: 'Name', value: lead.name || '—', inline: true },
           { name: 'Telefon', value: lead.telefon || '—', inline: true },
-          { name: 'Ort', value: lead.ort || '—', inline: true },
+          { name: lead.ortLabel || 'Ort', value: lead.ort || '—', inline: true },
           { name: 'Anliegen', value: lead.nachricht || '—' },
           { name: 'E-Mail', value: lead.email || '—', inline: true },
           { name: 'Quelle', value: lead.quelle || 'muster-website', inline: true },
@@ -117,7 +117,7 @@ async function sendMail(lead) {
 <table cellpadding="6" style="border-collapse:collapse">
 <tr><td><b>Name</b></td><td>${esc(lead.name)}</td></tr>
 <tr><td><b>Telefon</b></td><td>${esc(lead.telefon)}</td></tr>
-<tr><td><b>Ort</b></td><td>${esc(lead.ort)}</td></tr>
+<tr><td><b>${esc(lead.ortLabel || 'Ort')}</b></td><td>${esc(lead.ort)}</td></tr>
 <tr><td><b>Anliegen</b></td><td>${esc(lead.nachricht)}</td></tr>
 <tr><td><b>E-Mail</b></td><td>${esc(lead.email || '—')}</td></tr>
 <tr><td><b>Quelle</b></td><td>${esc(lead.quelle || 'muster-website')}</td></tr>
@@ -296,7 +296,16 @@ const server = http.createServer(async (req, res) => {
         kunde: (p.get('kunde') || 'muster').slice(0, 40).replace(/[^a-z0-9_-]/gi, ''),
         name: (p.get('name') || '').slice(0, 120),
         telefon: (p.get('telefon') || '').slice(0, 40),
-        ort: (p.get('ort') || '').slice(0, 80),
+        // Das dritte Pflichtfeld heißt je Gewerk anders: Der Dachdecker fragt nach
+        // dem Ort, die Kfz-Werkstatt nach dem Fahrzeug. Beide Namen werden
+        // angenommen.
+        //
+        // Der SPEICHERSCHLÜSSEL bleibt `ort` — das JSONL, die Anfragen-App und die
+        // Pflichtfeldprüfung unten hängen daran, und ein neuer Schlüssel hätte den
+        // Verlauf gespalten. Nur die BESCHRIFTUNG richtet sich nach dem gesendeten
+        // Feld: sonst stand in Discord und Mail „Ort: VW Golf, Baujahr 2014".
+        ort: (p.get('fahrzeug') ?? p.get('ort') ?? '').slice(0, 80),
+        ortLabel: p.get('fahrzeug') != null ? 'Fahrzeug' : 'Ort',
         nachricht: (p.get('nachricht') || '').slice(0, 1000),
         email: (p.get('email') || '').slice(0, 200),
         // Terminwunsch statt Kalender — z.B. „Dienstag vormittag"
