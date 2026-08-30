@@ -47,7 +47,30 @@ const ZIELE = {
     fehler: 'https://k-aizen.de/?fehler=felder#anfrage',
   },
 };
-const zielVon = (p) => ZIELE[p.get('ziel') || 'muster'] || ZIELE.muster;
+// Die Demo-Seiten der Brief-Welle liegen je unter `<slug>.demo.k-aizen.de` und
+// bringen jeweils ihre EIGENE Danke-Seite mit. Ohne diesen Zweig landete ihr
+// Besucher nach dem Absenden auf der Dachdecker-Musterseite — beim Empfänger
+// eines Briefes also auf der Website eines fremden Betriebs. Genau in dem
+// Moment, in dem er gerade Vertrauen fasst (gefunden 30.08.2026, indem das
+// Formular auf der echten Seite einmal wirklich abgeschickt wurde).
+//
+// Die feste Liste oben bleibt trotzdem der Regelfall, und der Schutz vor einer
+// offenen Weiterleitung bleibt bestehen: Der Slug ist bereits gesäubert
+// (nur [a-z0-9_-], max. 40 Zeichen) und trägt damit weder Punkt noch Schrägstrich
+// noch @. Er kann deshalb NUR eine Subdomain unterhalb von `demo.k-aizen.de`
+// bilden, niemals eine fremde Adresse. Unbekannte Slugs landen dort im 404 der
+// nginx-Konfiguration, nicht bei einem Fremden.
+const zielVon = (p) => {
+  const benannt = ZIELE[p.get('ziel')];
+  if (benannt) return benannt;
+
+  const slug = (p.get('kunde') || '').slice(0, 40).replace(/[^a-z0-9_-]/gi, '');
+  if (slug && slug !== 'muster') {
+    const basis = `https://${slug}.demo.k-aizen.de`;
+    return { danke: `${basis}/anfrage-erhalten/`, fehler: `${basis}/?fehler=felder#anfrage` };
+  }
+  return ZIELE.muster;
+};
 
 const DATA_DIR = process.env.DATA_DIR || '/data';
 const LOG = `${DATA_DIR}/leads.jsonl`;
