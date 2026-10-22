@@ -96,6 +96,24 @@ function esc(s) {
 // Name, Nummer, Anliegen auf einen Blick.
 async function pingDiscord(lead) {
   if (!DISCORD_WEBHOOK) return { ok: false, error: 'DISCORD_WEBHOOK_URL fehlt' };
+  // Echte Anfragen über k-aizen.de: nur ein Hinweis OHNE Personendaten (Ben, 22.10.2026). Discord bietet
+  // keinen AV-Vertrag an; Name, Telefon und Anliegen stehen in der Mail. Der volle Ping bleibt der Demo.
+  if (lead.kunde === 'kaizen') {
+    try {
+      const r = await fetch(DISCORD_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'User-Agent': 'meisterseite-lead-api' },
+        body: JSON.stringify({
+          username: 'k-aizen.de',
+          content: `<@${MENTION_ID}> 🔔 **Neue Anfrage über k-aizen.de** — Details im Postfach.`,
+          allowed_mentions: { users: [MENTION_ID] },
+        }),
+      });
+      return { ok: r.ok, status: r.status, body: r.ok ? undefined : await r.text() };
+    } catch (e) {
+      return { ok: false, error: String(e) };
+    }
+  }
   const kurz = lead.nachricht.length > 120 ? lead.nachricht.slice(0, 117) + '…' : lead.nachricht;
   const body = {
     username: 'Meisterseite',
@@ -135,8 +153,12 @@ async function sendMail(lead) {
   const body = {
     from: RESEND_FROM,
     to: [LEAD_TO],
-    subject: `🟠 Muster-Website-Anfrage: ${lead.name} — ${lead.ort}`,
-    html: `<h2>Neue Anfrage über muster.k-aizen.de</h2>
+    // k-aizen.de-Anfragen mit eigenem Betreff: der Lösch-Cron auf Hetzner (lead-mails-loeschen.py) findet
+    // sie daran und nimmt sie nach 6 Monaten aus dem Postfach (Datenschutzerklärung k-aizen.de).
+    subject: lead.kunde === 'kaizen'
+      ? `🟠 k-aizen.de-Anfrage: ${lead.name} — ${lead.ort}`
+      : `🟠 Muster-Website-Anfrage: ${lead.name} — ${lead.ort}`,
+    html: `<h2>Neue Anfrage über ${lead.kunde === 'kaizen' ? 'k-aizen.de' : 'muster.k-aizen.de'}</h2>
 <table cellpadding="6" style="border-collapse:collapse">
 <tr><td><b>Name</b></td><td>${esc(lead.name)}</td></tr>
 <tr><td><b>Telefon</b></td><td>${esc(lead.telefon)}</td></tr>
@@ -367,7 +389,8 @@ const server = http.createServer(async (req, res) => {
       const mail = await sendMail(lead);
       if (!mail.ok) console.error('MAIL-FEHLER', JSON.stringify(mail));
 
-      console.log(`LEAD ${lead.ts} kunde=${lead.kunde} ${lead.ort} ${lead.name} ` +
+      // Ohne Namen im Container-Log (Docker rotiert nur nach Größe, nicht nach Zeit).
+      console.log(`LEAD ${lead.ts} kunde=${lead.kunde} ${lead.ort} ` +
         `app=${app.zugestellt ?? 0}/${app.geraete} discord=${ping.ok} mail=${mail.ok}`);
 
       res.writeHead(303, { Location: ziel.danke });
